@@ -1,0 +1,1 @@
+# RussJudge.AutoApplicationUpdater
