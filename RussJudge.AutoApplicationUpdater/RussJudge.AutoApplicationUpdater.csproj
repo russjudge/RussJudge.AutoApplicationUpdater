@@ -8,8 +8,9 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>Russ Judge</Authors>
     <Company>$(Authors)</Company>
-    <Copyright>Copyright (c) 2024 Russ Judge</Copyright>
+    <Copyright>Copyright (c) 2024 $(Authors)</Copyright>
     <PackageIcon>rjicon2.png</PackageIcon>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

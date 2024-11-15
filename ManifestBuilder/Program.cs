@@ -6,7 +6,7 @@ Console.WriteLine("Hello, World!");
 //Above for not requiring admin privileges
 //Creates manifest file
 //Command line program. parameters are:
-//"<pathToManifestBuilderEXE>\ManifestBuilder.exe" "$(ProjectDir)..\<MainProjectFolder>\bin\<Debug/Release>\<.NET core version>\<project.exe>" <MsiInfo parameters>
+//"<pathToManifestBuilderEXE>\ManifestBuilder.exe" "$(ProjectDir)..\<MainProjectFolder>\bin\<Debug/Release>\<.NET core version>\<project.exe>" -url="http://url for where the .manifest file will be located." <MsiInfo parameters (including path to MSI file)>
 
 
 //$(ProjectDir)..\VersionBump\bin\Debug\net8.0\VersionBump.exe $(ProjectDir)ExampleSetup.vdproj

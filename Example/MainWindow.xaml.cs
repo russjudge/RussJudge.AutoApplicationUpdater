@@ -20,5 +20,7 @@ namespace Example
         {
             InitializeComponent();
         }
+        //By design, this will ALWAYS detect that an update is available, because the remote update manifest file is intentionally
+        // set with the wrong version number, so that this update process can be fully demonstrated.
     }
 }

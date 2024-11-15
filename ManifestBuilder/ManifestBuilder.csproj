@@ -12,4 +12,8 @@
     <Content Include="rjicon.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RussJudge.AutoApplicationUpdater\RussJudge.AutoApplicationUpdater.csproj" />
+  </ItemGroup>
+
 </Project>

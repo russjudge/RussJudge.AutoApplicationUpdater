@@ -13,4 +13,12 @@
     <Content Include="rjicon.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RussJudge.AutoApplicationUpdater\RussJudge.AutoApplicationUpdater.csproj" />
+  </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="$(SolutionDir)VersionBump\bin\Debug\net8.0\VersionBump.exe $(ProjectFileName)" />
+  </Target>
+
 </Project>
