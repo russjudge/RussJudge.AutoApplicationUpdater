@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "VersionBump": {
+      "commandName": "Project",
+      "commandLineArgs": "$(SolutionDir)ReferencedFiles\\ReportViewerSetup.vdproj"
+    }
+  }
+}

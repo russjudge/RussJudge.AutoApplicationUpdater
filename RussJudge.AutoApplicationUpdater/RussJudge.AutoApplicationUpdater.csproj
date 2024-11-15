@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>rjicon.ico</ApplicationIcon>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>Russ Judge</Authors>
+    <Company>$(Authors)</Company>
+    <Copyright>Copyright (c) 2024 Russ Judge</Copyright>
+    <PackageIcon>rjicon2.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="rjicon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="rjicon2.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>
