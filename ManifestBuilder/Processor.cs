@@ -32,5 +32,18 @@ namespace ManifestBuilder
             Console.WriteLine($"{prefixStar}{l1Final}{prefixStar}");
 
         }
+
+        public void BuildFile(string assemblyPath, string outputFile, bool isRequired = false)
+        {
+            var manifest = RussJudge.AutoApplicationUpdater.UpdateManifest.GetManifestFile(assemblyPath);
+
+            if (outputFile.EndsWith("\\"))
+            {
+                DirectoryInfo dir = new(outputFile);
+            }
+            FileInfo f = new(outputFile);
+
+        }
+
     }
 }

@@ -56,7 +56,9 @@
                 WriteLine("Syntax:");
                 WriteLine("VersionBump projectfile");
                 WriteLine("Supports both .csproj (c# project) and .vdproj (Microsoft Setup Installer .msi project) files");
+                WriteLine("Please note that if this is run as part of a pre-compile event, the compile will only use the previous version.");
                 WriteStarLine();
+
             }
         }
     }

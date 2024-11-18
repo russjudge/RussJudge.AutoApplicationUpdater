@@ -14,6 +14,11 @@ namespace RussJudge.AutoApplicationUpdater
     {
         private UpdateManifest? RemoteManifestFile;
         /// <summary>
+        /// Indicates whether or not the update is required.
+        /// </summary>
+        public bool IsRequired { get; private set; }
+
+        /// <summary>
         /// Last response from connection to the remote server for checking for update or downloading the installer package.
         /// </summary>
         public RemoteResponse? LastRemoteResponse { get; private set; }
@@ -91,6 +96,8 @@ namespace RussJudge.AutoApplicationUpdater
             }
         }
 
+
+
         /// <summary>
         /// Checks if an update is available.
         /// </summary>
@@ -116,7 +123,8 @@ namespace RussJudge.AutoApplicationUpdater
             }
             if (RemoteManifestFile != null)
             {
-                return RemoteManifestFile.FileNeedsUpdated(AssemblyForVersionCheckLocation);
+                IsRequired = RemoteManifestFile.IsRequired;
+                return RemoteManifestFile.NeedsUpdated(AssemblyForVersionCheckLocation);
             }
             else
             {

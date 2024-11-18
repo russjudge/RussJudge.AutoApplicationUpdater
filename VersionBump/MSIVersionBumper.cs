@@ -24,7 +24,7 @@
                         position--;
                     }
                     position++;
-                    string oldVer = ProjectData.Substring(position, endPosition - position);
+                    string oldVer = ProjectData[position..endPosition];
                     if (int.TryParse(oldVer, out int ver))
                     {
                         ver++;

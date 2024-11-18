@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35431.28
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RussJudge.AutoApplicationUpdater", "RussJudge.AutoApplicationUpdater\RussJudge.AutoApplicationUpdater.csproj", "{941FBBAD-EA88-4D1E-9B39-82E1FA9B8CFD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RussJudge.AutoApplicationUpdater", "RussJudge.AutoApplicationUpdater\RussJudge.AutoApplicationUpdater.csproj", "{941FBBAD-EA88-4D1E-9B39-82E1FA9B8CFD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VersionBump", "VersionBump\VersionBump.csproj", "{42F7D483-9242-4D94-BEA9-A9D5A594B17A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example", "Example\Example.csproj", "{468122B9-E9A5-4572-BAB8-FA786FA24CD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example", "Example\Example.csproj", "{468122B9-E9A5-4572-BAB8-FA786FA24CD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManifestBuilder", "ManifestBuilder\ManifestBuilder.csproj", "{293D0502-368F-4830-A07D-8570E3045BEC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ManifestBuilder", "ManifestBuilder\ManifestBuilder.csproj", "{293D0502-368F-4830-A07D-8570E3045BEC}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ExampleSetup", "ExampleSetup\ExampleSetup.vdproj", "{80549EF4-74BD-4454-BD74-CE27BEF07E72}"
 EndProject
@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Russjudge.ManifestBuilder.Setup", "Russjudge.ManifestBuilder.Setup\Russjudge.ManifestBuilder.Setup.vdproj", "{92949221-CD29-4F31-B0FC-022EEAA75B75}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SampleDeployment", "SampleDeployment", "{267BC47A-FE57-4045-AFC5-14A6EE3CC064}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

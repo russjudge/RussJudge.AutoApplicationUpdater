@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 
 namespace RussJudge.AutoApplicationUpdater
@@ -18,7 +19,6 @@ namespace RussJudge.AutoApplicationUpdater
     /// <summary>
     /// Information for determining whether an update is needed, the location of the installer package.
     /// </summary>
-    [JsonSerializable(typeof(UpdateManifest))]
     public class UpdateManifest
     {
         /// <summary>
@@ -34,7 +34,8 @@ namespace RussJudge.AutoApplicationUpdater
         {
             if (manifest != null)
             {
-                this.Version = manifest.Version;
+                _versionInfo = new(manifest.Version);
+
                 this.Executable = manifest.Executable;
                 this.FilePackageChecksum = manifest.FilePackageChecksum;
                 this.FilePackageSize = manifest.FilePackageSize;
@@ -62,7 +63,9 @@ namespace RussJudge.AutoApplicationUpdater
                     || f.Name.EndsWith(EXEExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     Executable = f.Name;
-                    Version = GetVersionData(f.FullName);
+
+                    _versionInfo = GetVersionData(f.FullName);
+
 
                     if (!string.IsNullOrEmpty(remoteURLSourcePackageInstaller))
                     {
@@ -76,7 +79,7 @@ namespace RussJudge.AutoApplicationUpdater
                     LoadManifestData(Deserialize(sr.ReadToEnd()));
                     if (!string.IsNullOrEmpty(remoteURLSourcePackageInstaller))
                     {
-                        RemoteURLSourcePackage = RemoteURLSourcePackage;
+                        RemoteURLSourcePackage = remoteURLSourcePackageInstaller;
                     }
                 }
 
@@ -91,6 +94,8 @@ namespace RussJudge.AutoApplicationUpdater
         /// </summary>
         public string Executable { get; set; } = string.Empty;
 
+
+        private VersionInfo? _versionInfo;
         /// <summary>
         /// The Version for determining an update.
         /// </summary>
@@ -98,57 +103,96 @@ namespace RussJudge.AutoApplicationUpdater
         {
             get
             {
-                return $"{Major}.{Minor}.{Revision}.{Build}";
+                if (_versionInfo == null)
+                {
+                    return "0.0.0.0";
+                }
+                else
+                {
+                    return _versionInfo.Version;
+                }
             }
             set
             {
-                var parts = value.Split('.');
-                if (parts.Length > 0)
+                _versionInfo = new(value);
+            }
+        }
+
+        /// <summary>
+        /// The major version of an update.
+        /// </summary>
+        [JsonIgnore]
+        public int Major
+        {
+            get
+            {
+                if (_versionInfo == null)
                 {
-                    if (int.TryParse(parts[0], out int v1))
-                    {
-                        Major = v1;
-                    }
+                    return 0;
                 }
-                if (parts.Length > 1)
+                else
                 {
-                    if (int.TryParse(parts[1], out int v1))
-                    {
-                        Minor = v1;
-                    }
-                }
-                if (parts.Length > 2)
-                {
-                    if (int.TryParse(parts[2], out int v1))
-                    {
-                        Revision = v1;
-                    }
-                }
-                if (parts.Length > 3)
-                {
-                    if (int.TryParse(parts[3], out int v1))
-                    {
-                        Build = v1;
-                    }
+                    return _versionInfo.Major;
                 }
             }
         }
         /// <summary>
-        /// The major version of an update.
-        /// </summary>
-        public int Major { get; set; }
-        /// <summary>
         /// The minor version of an update.
         /// </summary>
-        public int Minor { get; set; }
+        [JsonIgnore]
+        public int Minor
+        {
+            get
+            {
+                if (_versionInfo == null)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return _versionInfo.Minor;
+                }
+            }
+        }
+
         /// <summary>
         /// The revision of an update.
         /// </summary>
-        public int Revision { get; set; }
+        [JsonIgnore]
+        public int Revision
+        {
+            get
+            {
+                if (_versionInfo == null)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return _versionInfo.Revision;
+                }
+            }
+        }
+
         /// <summary>
         /// The build number of an update.
         /// </summary>
-        public int Build { get; set; }
+        [JsonIgnore]
+        public int Build
+        {
+            get
+            {
+                if (_versionInfo == null)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return _versionInfo.Build;
+                }
+            }
+        }
+
 
         /// <summary>
         /// The package filename, without the path.
@@ -174,14 +218,11 @@ namespace RussJudge.AutoApplicationUpdater
         /// </summary>
         public string RemoteURLSourcePackage { get; set; } = string.Empty;
 
-
-
         /// <summary>
-        /// 
+        /// Downloads the Remote Update Manifest file.
         /// </summary>
         /// <param name="RemoteSourceManifestFileURL"></param>
-        /// <exception cref="HttpRequestException">Thrown on an error trying to download the remote UpdateManifest</exception>
-        /// <returns></returns>
+        /// <returns>The response from the remote, including the manifest if successful, or any error messages if failed.</returns>
         public static async Task<RemoteResponse?> GetRemoteManifestFile(string RemoteSourceManifestFileURL)
         {
             RemoteResponse retVal;
@@ -205,19 +246,19 @@ namespace RussJudge.AutoApplicationUpdater
         /// <summary>
         /// Downloads the update manifest from the remote URL.
         /// </summary>
-        /// <param name="remoteUpdateManifestUrl"></param>
-        /// <returns></returns>
+        /// <param name="UpdateManifestFilePath">The local path to the UpdateManifest File</param>
+        /// <returns>The Update Manifest file.</returns>
 
-        public static UpdateManifest GetManifestFile(string remoteUpdateManifestUrl)
+        public static UpdateManifest GetManifestFile(string UpdateManifestFilePath)
         {
-            using StreamReader sr = new(remoteUpdateManifestUrl);
+            using StreamReader sr = new(UpdateManifestFilePath);
             return new(sr.ReadToEnd());
         }
         /// <summary>
         /// Downloads the installer package from the remote URL.
         /// </summary>
         /// <param name="remotePackageURL">The URL to the remote installer package.</param>
-        /// <returns></returns>
+        /// <returns>The response from the remote, including the installer package if successful, or any error messages if failed.</returns>
         public async Task<RemoteResponse> GetRemotePackage(string remotePackageURL)
         {
             RemoteResponse retVal;
@@ -262,78 +303,100 @@ namespace RussJudge.AutoApplicationUpdater
             }
             return retVal;
         }
+        /// <summary>
+        /// Downloads the remote installer package.
+        /// </summary>
+        /// <returns>The response from the remote, including the installer packkage if successful, or any error messages if failed.</returns>
         public async Task<RemoteResponse?> GetRemotePackage()
         {
             return await GetRemotePackage(RemoteURLSourcePackage);
         }
 
 
-
-        public bool FileNeedsUpdated(string assemblyPath)
+        /// <summary>
+        /// Tests the assembly against the latest version and determines if an update is needed.
+        /// </summary>
+        /// <param name="assemblyPath">The path to the assembly needing tested.</param>
+        /// <returns>True if the this version is higher than the passed local assembly version, otherwise false.</returns>
+        public bool NeedsUpdated(string assemblyPath)
         {
-            return !GetVersionData(assemblyPath).Equals(Version);
+
+            bool retVal = false;
+            var localVersion = GetVersionData(assemblyPath);
+            if (_versionInfo != null)
+            {
+                retVal = _versionInfo.IsNewer(localVersion);
+            }
+            return retVal;
         }
+
+        /// <summary>
+        /// Validates that the checksum of the local file matches the expected checksum as provided by the remote Update Manifest file.
+        /// </summary>
+        /// <param name="path">The local path to the downloaded installer package.</param>
+        /// <returns>True if the checksum is valid.</returns>
         public bool PackageIsValid(string path)
         {
             return GetFileChecksum(path).Equals(FilePackageChecksum);
         }
+
+
+        /// <summary>
+        /// Validates that the checksum of the local file matches the expected checksum as provided by the remote Update Manifest file.
+        /// </summary>
+        /// <param name="package">The installer package.</param>
+        /// <returns>True if the checksum is valid.</returns>
         public bool PackageIsValid(byte[] package)
         {
             return GetFileChecksum(package).Equals(FilePackageChecksum);
         }
-        private static string GetVersionData(string FullAssemblyFile)
-        {
-            string retVal;
 
+
+        private static VersionInfo GetVersionData(string FullAssemblyFile)
+        {
             if (!string.IsNullOrEmpty(FullAssemblyFile)
                && File.Exists(FullAssemblyFile))
             {
-                var versionInfo = FileVersionInfo.GetVersionInfo(FullAssemblyFile);
-                if (versionInfo != null && !string.IsNullOrEmpty(versionInfo.FileVersion))
-                {
-                    retVal = versionInfo.FileVersion;
-                }
-                else
-                {
-                    if (versionInfo != null && !string.IsNullOrEmpty(versionInfo.ProductVersion))
-                    {
-                        retVal = versionInfo.ProductVersion;
-                    }
-                    else
-                    {
-                        retVal = string.Empty;
-                    }
-                }
+                var fileVersionInfo = FileVersionInfo.GetVersionInfo(FullAssemblyFile);
+                return new(fileVersionInfo);
             }
             else
             {
-                retVal = string.Empty;
+                return new("0.0.0.0");
             }
-            return retVal;
         }
         /// <summary>
-        /// 
+        /// Gets the MD5 hash checksum for the provided file.
         /// </summary>
-        /// <param name="filePath"></param>
-        /// <returns></returns>
+        /// <param name="filePath">The full local path to the file to get the checksum for.</param>
+        /// <returns>The string representation of the MD5 checksum of the file.</returns>
         public static string GetFileChecksum(string filePath)
         {
             using var stream = File.OpenRead(filePath);
             return BitConverter.ToString(MD5.HashData(stream)).Replace("-", string.Empty).ToLowerInvariant();
         }
+        /// <summary>
+        /// Gets the MD5 hash checksum for the provided file.
+        /// </summary>
+        /// <param name="bytes">The full binary data of the file.</param>
+        /// <returns>The string representation of the MD5 checksum of the file.</returns>
         public static string GetFileChecksum(byte[] bytes)
         {
             return BitConverter.ToString(MD5.HashData(bytes)).Replace("-", string.Empty).ToLowerInvariant();
         }
-
-        public override string ToString()
+        /// <summary>
+        /// Serializes the UpdateManifest into JSON data.
+        /// </summary>
+        /// <returns>The JSON for the UpdateManifest</returns>
+        public string Serialize()
         {
             return JsonSerializer.Serialize(this);
         }
-        public string Serialize()
-        {
-            return ToString();
-        }
+        /// <summary>
+        /// Converts valid JSON into an UpdateManifest object.
+        /// </summary>
+        /// <param name="json">The valid JSON of UpdateManifest object.</param>
+        /// <returns>The UpdateManifest of the JSON data.</returns>
         public static UpdateManifest? Deserialize(string json)
         {
             return JsonSerializer.Deserialize<UpdateManifest>(json);

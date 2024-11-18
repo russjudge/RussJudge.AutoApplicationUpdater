@@ -1,4 +1,4 @@
-﻿"DeployProject"
+"DeployProject"
 {
 "VSVersion" = "3:800"
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
@@ -37,6 +37,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
         "Release"
         {
@@ -53,6 +61,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
     }
     "Deployable"
@@ -70,6 +86,16 @@
         {
             "LaunchCondition"
             {
+                "{A06ECF26-33A3-4562-8140-9B0E340D4F24}:_E7DDA463B08741D1A00D147961348374"
+                {
+                "Name" = "8:.NET Core"
+                "Message" = "8:[VSDNETCOREMSG]"
+                "AllowLaterVersions" = "11:FALSE"
+                "InstallUrl" = "8:https://dotnet.microsoft.com/download/dotnet-core/[NetCoreVerMajorDotMinor]"
+                "IsNETCore" = "11:TRUE"
+                "Architecture" = "2:0"
+                "Runtime" = "2:0"
+                }
             }
         }
         "File"
@@ -129,22 +155,22 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:ExampleSetup"
-        "ProductCode" = "8:{26131DBB-7699-4E04-BC02-91B2C3361CE5}"
-        "PackageCode" = "8:{D10C1FBB-168F-424F-A2AC-FB5E8F16C71D}"
+        "ProductName" = "8:Example Setup"
+        "ProductCode" = "8:{69A8ADAB-35F1-4E10-AD1D-9F244F2745B3}"
+        "PackageCode" = "8:{E60E206E-F603-488D-91EF-CE7285883EA9}"
         "UpgradeCode" = "8:{8E698114-557E-4358-92EA-7A2D260B68AF}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.0"
-        "Manufacturer" = "8:admin"
+        "ProductVersion" = "8:1.0.1"
+        "Manufacturer" = "8:Russ Judge"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:ExampleSetup"
+        "Title" = "8:Example"
         "Subject" = "8:"
-        "ARPCONTACT" = "8:admin"
+        "ARPCONTACT" = "8:Russ Judge"
         "Keywords" = "8:"
         "ARPCOMMENTS" = "8:"
         "ARPURLINFOABOUT" = "8:"
@@ -154,7 +180,7 @@
         "UseSystemSearchPath" = "11:TRUE"
         "TargetPlatform" = "3:0"
         "PreBuildEvent" = "8:$(ProjectDir)..\\VersionBump\\bin\\Debug\\net8.0\\VersionBump.exe $(ProjectDir)ExampleSetup.vdproj"
-        "PostBuildEvent" = "8:"
+        "PostBuildEvent" = "8:$(ProjectDir)..\\ManifestBuilder\\bin\\Debug\\net8.0\\ManifestBuilder.exe $(ProjectDir)..\\Example\\bin\\Debug\\net8.0\\Example.exe $(BuiltOuputPath)"
         "RunPostBuildEvent" = "3:0"
         }
         "Registry"

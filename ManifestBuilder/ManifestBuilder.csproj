@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,5 +17,9 @@
   <ItemGroup>
     <ProjectReference Include="..\RussJudge.AutoApplicationUpdater\RussJudge.AutoApplicationUpdater.csproj" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="XCOPY $(OutDir)*.* $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\ /Y&#xD;&#xA;REM $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\VersionBump.exe $(ProjectFileName)" />
+  </Target>
 
 </Project>

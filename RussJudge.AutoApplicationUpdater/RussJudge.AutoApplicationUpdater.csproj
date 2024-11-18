@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -11,6 +11,8 @@
     <Copyright>Copyright (c) 2024 $(Authors)</Copyright>
     <PackageIcon>rjicon2.png</PackageIcon>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <FileVersion>1.0.0.4</FileVersion>
+    <AssemblyVersion>1.0.0.4</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,5 +25,13 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="lib\" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="$(ProjectDir)lib\VersionBump.exe $(ProjectFileName)" />
+  </Target>
 
 </Project>

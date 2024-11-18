@@ -8,8 +8,6 @@
         private const string VersionMatch1 = "<FileVersion>";
         private const string VersionMatch2 = "<AssemblyVersion>";
         private const string Match3 = "</PropertyGroup>";
-        private string? newFileVersion;
-        private string? newAssemblyVersion;
 
 
         public void Process()
@@ -19,8 +17,8 @@
                 ProjectData = sr.ReadToEnd();
             }
 
-            UpdateMatch(VersionMatch1, out newFileVersion);
-            UpdateMatch(VersionMatch2, out newAssemblyVersion);
+            UpdateMatch(VersionMatch1, out string? newFileVersion);
+            UpdateMatch(VersionMatch2, out string? newAssemblyVersion);
 
             using (StreamWriter sw = new(ProjectFile))
             {

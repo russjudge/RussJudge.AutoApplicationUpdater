@@ -1,12 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <FileVersion>2.0.0.6</FileVersion>
-    <AssemblyVersion>2.0.0.6</AssemblyVersion>
+    <FileVersion>2.0.0.10</FileVersion>
+    <AssemblyVersion>2.0.0.10</AssemblyVersion>
     <Authors>Russ Judge</Authors>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -14,5 +14,9 @@
   <ItemGroup>
     <Content Include="rjicon.ico" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="XCOPY $(OutDir)*.* $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\ /Y&#xD;&#xA;$(OutDir)VersionBump.exe $(ProjectFileName)" />
+  </Target>
 
 </Project>
