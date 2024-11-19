@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Security.Cryptography;
 using System.Text;
@@ -26,8 +28,75 @@ namespace RussJudge.AutoApplicationUpdater
         /// </summary>
         public const string DefaultManifestExtension = ".json";
 
+        /// <summary>
+        /// List of supported compression types, in addition to zip.
+        /// </summary>
+        public static Dictionary<string, Type> CompressionTypes { get; private set; } =
+                new([new("gzip", typeof(System.IO.Compression.GZipStream)),
+                    new("br", typeof(System.IO.Compression.BrotliStream)),
+                    new("zlib", typeof(System.IO.Compression.ZLibStream)) ]);
+
+        internal static string? LastError { get; set; }
+        internal static string? Decompress(string compressedFile, Type compressorType)
+        {
+            string? retVal = null;
+            int pos = compressedFile.LastIndexOf('.');
+            if (pos > 0)
+            {
+                try
+                {
+                    retVal = compressedFile[..pos];
+                    using FileStream compressedFileStream = File.Open(compressedFile, FileMode.Open);
+                    using FileStream outputFileStream = File.Create(retVal);
+
+                    ConstructorInfo? constructor = compressorType.GetConstructor([typeof(Stream), typeof(CompressionMode)]);
+                    if (constructor != null)
+                    {
+                        using var decompressor = (Stream)constructor.Invoke([compressedFileStream, CompressionMode.Decompress]);
+                        decompressor.CopyTo(outputFileStream);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LastError = ex.Message;
+                }
+            }
+            return retVal;
+        }
+        internal static string? UnzipFile(string packagedZip)
+        {
+            string? retVal = null;
+            try
+            {
+                using (ZipArchive archive = ZipFile.OpenRead(packagedZip))
+                {
+                    foreach (ZipArchiveEntry entry in archive.Entries)
+                    {
+                        retVal = Path.Combine(Path.GetTempPath(), entry.Name);
+
+                        entry.ExtractToFile(retVal, true);
+                    }
+                }
+                if (retVal == null)
+                {
+                    LastError = "Compressed package file was empty.  Cannot proceed.  Please try again or contact the developer if the problem continues.";
+                }
+            }
+            catch (Exception ex)
+            {
+                LastError = ex.Message;
+            }
+            return retVal;
+        }
+
+
         private const string DLLExtension = ".dll";
         private const string EXEExtension = ".exe";
+        /// <summary>
+        /// The file extension for zip files.
+        /// </summary>
+        public const string ZIPExtension = ".zip";
+
         static readonly HttpClient httpClient = new();
 
         private void LoadManifestData(UpdateManifest? manifest)
@@ -207,6 +276,8 @@ namespace RussJudge.AutoApplicationUpdater
         /// The MD5 checksum of the package file.
         /// </summary>
         public string FilePackageChecksum { get; set; } = string.Empty;
+
+
 
         /// <summary>
         /// Whether or not the update is required.

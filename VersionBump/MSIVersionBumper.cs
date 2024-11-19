@@ -61,6 +61,7 @@
 
             FileInfo f = new(ProjectFile);
             Processor.WriteStarLine();
+            Processor.WriteLine("VersionBump--updating Package version");
             Processor.WriteLine($"Project: {f.Name}");
             Processor.WriteLine($"Package Version updated to {NewVersion}");
             Processor.WriteStarLine();

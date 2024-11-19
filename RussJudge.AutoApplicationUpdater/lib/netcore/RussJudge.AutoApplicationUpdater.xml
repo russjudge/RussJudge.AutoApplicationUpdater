@@ -45,6 +45,11 @@
             Class to check for and download and install an update to your application.
             </summary>
         </member>
+        <member name="P:RussJudge.AutoApplicationUpdater.UpdateChecker.IsRequired">
+            <summary>
+            Indicates whether or not the update is required.
+            </summary>
+        </member>
         <member name="P:RussJudge.AutoApplicationUpdater.UpdateChecker.LastRemoteResponse">
             <summary>
             Last response from connection to the remote server for checking for update or downloading the installer package.
@@ -87,6 +92,16 @@
         <member name="F:RussJudge.AutoApplicationUpdater.UpdateManifest.DefaultManifestExtension">
             <summary>
             Extension used for the Application version information file for automatic self-update.
+            </summary>
+        </member>
+        <member name="P:RussJudge.AutoApplicationUpdater.UpdateManifest.CompressionTypes">
+            <summary>
+            List of supported compression types, in addition to zip.
+            </summary>
+        </member>
+        <member name="F:RussJudge.AutoApplicationUpdater.UpdateManifest.ZIPExtension">
+            <summary>
+            The file extension for zip files.
             </summary>
         </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.#ctor(System.String,System.String)">
@@ -223,7 +238,7 @@
         </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.Deserialize(System.String)">
             <summary>
-            Converts valid JSOn into an UpdateManifest object.
+            Converts valid JSON into an UpdateManifest object.
             </summary>
             <param name="json">The valid JSON of UpdateManifest object.</param>
             <returns>The UpdateManifest of the JSON data.</returns>

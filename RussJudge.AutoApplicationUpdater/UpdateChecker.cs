@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,6 +24,8 @@ namespace RussJudge.AutoApplicationUpdater
         /// Last response from connection to the remote server for checking for update or downloading the installer package.
         /// </summary>
         public RemoteResponse? LastRemoteResponse { get; private set; }
+
+
         /// <summary>
         /// Downloads the remote installer package and executes it.
         /// </summary>
@@ -40,19 +44,51 @@ namespace RussJudge.AutoApplicationUpdater
                     {
                         if (RemoteManifestFile.PackageIsValid(setupPackage))
                         {
+
                             try
                             {
+                                bool canProceed = true;
                                 string packageFile = Path.Combine(Path.GetTempPath(), RemoteManifestFile.FilePackageName);
                                 using (FileStream fs = new(packageFile, FileMode.Create))
                                 {
                                     fs.Write(setupPackage, 0, setupPackage.Length);
                                 }
-                                ProcessStartInfo startInfo = new(packageFile)
+
+                                FileInfo package = new(packageFile);
+                                if (package.Extension.Equals(UpdateManifest.ZIPExtension, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    UseShellExecute = true
-                                };
-                                Process.Start(startInfo);
-                                retVal = null;
+                                    string? decompressedFile = UpdateManifest.UnzipFile(packageFile);
+                                    if (string.IsNullOrEmpty(decompressedFile))
+                                    {
+                                        retVal = UpdateManifest.LastError;
+                                    }
+                                    else
+                                    {
+                                        packageFile = decompressedFile;
+                                    }
+                                }
+                                else if (UpdateManifest.CompressionTypes.TryGetValue(package.Extension.ToLowerInvariant(), out var compressionType)
+                                    && compressionType != null)
+                                {
+                                    var decompressedFile = UpdateManifest.Decompress(packageFile, compressionType);
+                                    if (string.IsNullOrEmpty(decompressedFile))
+                                    {
+                                        retVal = UpdateManifest.LastError;
+                                    }
+                                    else
+                                    {
+                                        packageFile = decompressedFile;
+                                    }
+                                }
+                                if (canProceed)
+                                {
+                                    ProcessStartInfo startInfo = new(packageFile)
+                                    {
+                                        UseShellExecute = true
+                                    };
+                                    Process.Start(startInfo);
+                                    retVal = null;
+                                }
                             }
                             catch (Exception ex)
                             {

@@ -44,6 +44,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
         "Release"
@@ -68,6 +76,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
     }
@@ -156,15 +172,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Example Setup"
-        "ProductCode" = "8:{69A8ADAB-35F1-4E10-AD1D-9F244F2745B3}"
-        "PackageCode" = "8:{E60E206E-F603-488D-91EF-CE7285883EA9}"
+        "ProductCode" = "8:{EE318D2A-DC2E-47D3-9C25-2CAC0D976AC4}"
+        "PackageCode" = "8:{E182741B-D258-4F75-BB8B-575F45F9CC74}"
         "UpgradeCode" = "8:{8E698114-557E-4358-92EA-7A2D260B68AF}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.1"
+        "ProductVersion" = "8:1.0.12"
         "Manufacturer" = "8:Russ Judge"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -179,8 +195,8 @@
         "SearchPath" = "8:"
         "UseSystemSearchPath" = "11:TRUE"
         "TargetPlatform" = "3:0"
-        "PreBuildEvent" = "8:$(ProjectDir)..\\VersionBump\\bin\\Debug\\net8.0\\VersionBump.exe $(ProjectDir)ExampleSetup.vdproj"
-        "PostBuildEvent" = "8:$(ProjectDir)..\\ManifestBuilder\\bin\\Debug\\net8.0\\ManifestBuilder.exe $(ProjectDir)..\\Example\\bin\\Debug\\net8.0\\Example.exe $(BuiltOuputPath)"
+        "PreBuildEvent" = "8:$(ProjectDir)..\\RussJudge.AutoApplicationUpdater\\lib\\netcore\\VersionBump.exe $(ProjectDir)ExampleSetup.vdproj"
+        "PostBuildEvent" = "8:$(ProjectDir)..\\RussJudge.AutoApplicationUpdater\\lib\\netcore\\ManifestBuilder.exe -config $(ProjectDir)..\\Example\\updatemanifest.txt -out $(ProjectDir)Debug\\\r\nXCOPY $(ProjectDir)Debug\\*.* $(ProjectDir)..\\SampleDeployment\\ /Y"
         "RunPostBuildEvent" = "3:0"
         }
         "Registry"
@@ -678,7 +694,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_E61C198FECD6430289CCEA8B71997A12"
             {
-            "SourcePath" = "8:..\\Example\\obj\\Debug\\net8.0-windows\\apphost.exe"
+            "SourcePath" = "8:..\\Example\\obj\\Debug\\net9.0-windows7.0\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_7506E80972744A5DBBF5718EE01BC54C"

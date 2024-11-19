@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ManifestBuilder": {
+      "commandName": "Project",
+      "commandLineArgs": "-config C:\\Development\\RussJudge.AutoApplicationUpdater\\Example\\updatemanifest.txt -out C:\\Development\\RussJudge.AutoApplicationUpdater\\ExampleSetup\\Debug\\"
+    }
+  }
+}

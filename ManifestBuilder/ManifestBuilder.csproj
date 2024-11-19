@@ -1,13 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.17</FileVersion>
+    <AssemblyVersion>1.0.0.17</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="XCOPY $(OutDir)*.* $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\ /Y&#xD;&#xA;REM $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\VersionBump.exe $(ProjectFileName)" />
+    <Exec Command="XCOPY $(OutDir)*.* $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\netcore /Y&#xD;&#xA;$(SolutionDir)RussJudge.AutoApplicationUpdater\lib\netcore\VersionBump.exe $(ProjectFileName)" />
   </Target>
 
 </Project>

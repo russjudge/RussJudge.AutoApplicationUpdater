@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <FileVersion>2.0.0.10</FileVersion>
-    <AssemblyVersion>2.0.0.10</AssemblyVersion>
+    <FileVersion>2.0.0.18</FileVersion>
+    <AssemblyVersion>2.0.0.18</AssemblyVersion>
     <Authors>Russ Judge</Authors>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="XCOPY $(OutDir)*.* $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\ /Y&#xD;&#xA;$(OutDir)VersionBump.exe $(ProjectFileName)" />
+    <Exec Command="XCOPY $(OutDir)*.* $(SolutionDir)RussJudge.AutoApplicationUpdater\lib\netcore\ /Y&#xD;&#xA;$(OutDir)VersionBump.exe $(ProjectFileName)" />
   </Target>
 
 </Project>

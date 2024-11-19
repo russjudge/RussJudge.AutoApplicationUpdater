@@ -26,6 +26,7 @@
             }
             FileInfo f = new(ProjectFile);
             Processor.WriteStarLine();
+            Processor.WriteLine("VersionBump--updating File and Project versions");
             Processor.WriteLine($"Project: {f.Name}");
             Processor.WriteLine($"Project FileVersion update to    {newFileVersion}");
             Processor.WriteLine($"Project AsemblyVersion update to {newAssemblyVersion}");

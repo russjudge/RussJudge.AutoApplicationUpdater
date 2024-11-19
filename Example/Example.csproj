@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
-    <FileVersion>1.0.0.2</FileVersion>
-    <AssemblyVersion>1.0.0.2</AssemblyVersion>
+    <FileVersion>1.0.0.17</FileVersion>
+    <AssemblyVersion>1.0.0.17</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(SolutionDir)RussJudge.AutoApplicationUpdater\lib\VersionBump.exe $(ProjectFileName)" />
+    <Exec Command="$(SolutionDir)RussJudge.AutoApplicationUpdater\lib\netcore\VersionBump.exe $(ProjectFileName)" />
   </Target>
 
 </Project>
