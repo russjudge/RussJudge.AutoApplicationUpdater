@@ -39,8 +39,10 @@ namespace ManifestBuilder
         }
         public static void BuildFile(string assemblyPath, string packageFilePath, string outputFile, string installerURL, bool isRequired = false)
         {
-            UpdateManifest manifest = new(assemblyPath);
-            manifest.IsRequired = isRequired;
+            UpdateManifest manifest = new(assemblyPath)
+            {
+                IsRequired = isRequired
+            };
 
             FileInfo packageFile = new(packageFilePath);
             manifest.FilePackageName = packageFile.Name;
