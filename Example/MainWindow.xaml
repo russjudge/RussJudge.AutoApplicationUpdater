@@ -7,7 +7,11 @@
         mc:Ignorable="d"
         Loaded="OnLoaded"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-
-    </Grid>
+    <DockPanel>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock
+                TextWrapping="Wrap"
+                Text="An update for this Example was check for upon load.  If a newer version was available, you would have received a prompt." />
+        </StackPanel>
+    </DockPanel>
 </Window>

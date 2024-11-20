@@ -114,6 +114,7 @@ So, an example parameter file is:
 -required=false
 ```
 
+
 ManifestBuilder is capable of compressing the .msi package automatically. Compression files that are supported include .zip, .gzip, .zlib, and .br,
 all of which are natively supported by .NET 9.0.  To have your installer package compressed appropriately, simply set the -remoteurl parameter
 to end with one of those file extentions (.zip, .gzip, .zlib, .br).  The compressed file will be created in the same folder as the .msi package
@@ -129,9 +130,19 @@ in the lib folder upon referencing RussJudge.AutoApplicationUpdater from Nuget.
 
 To use VersionBump, the only parameter is the path to the project file.  VersionBump currently supports only C# project (.csproj)
 and Microsoft Setup Projects (.vdproj).  VersionBump will update a Setup Project in such a way as to ensure it works correctly as an upgrade
-to a previous install, such that when installed, it will uninstall the older version.
+to a previous install, such that when installed, it will uninstall the older version.  This is done by updating the version and applying new
+Guids to the Product Code and the Package Code.  The Upgrade Code does not get affected.
 
+Syntax:
 
+`VersionBump myproject.csproj`
 
 
 ## Adding ManifestBuilder and VersionBump to the Build events
+Adding VersionBump to the Build Post Event of your project will increment the fourth node of the version by one.  Since the project is loaded into
+memory at the time of compile, the version increase will only reflect on the next build.  Using VersionBump is useful for when your project is
+deterministic and the version cannot be set with the wildcard (*).  VersionBump can be added to either the PreBuild or PostBuild event with the
+result being the same either way.
+
+Add ManifestBuilder to the Post Build event of the Setup project (.vdproj) with appropriate parameters.  This will result in the update manifest file
+being added after the setup package is built, along with creating a compressed file (if desired) of the setup package in that same folder.

@@ -20,6 +20,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SampleDeployment", "SampleDeployment", "{267BC47A-FE57-4045-AFC5-14A6EE3CC064}"
+	ProjectSection(SolutionItems) = preProject
+		SampleDeployment\Example.json = SampleDeployment\Example.json
+		SampleDeployment\ExampleSetup.msi = SampleDeployment\ExampleSetup.msi
+		SampleDeployment\ExampleSetup.zip = SampleDeployment\ExampleSetup.zip
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

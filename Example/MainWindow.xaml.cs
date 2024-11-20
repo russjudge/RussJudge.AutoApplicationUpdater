@@ -7,6 +7,8 @@ namespace Example
     /// </summary>
     public partial class MainWindow : Window
     {
+        //Hard-code the URL that contains the data for verison information and self-update.
+        const string remoteUpdateMainfestURL = "https://github.com/russjudge/RussJudge.AutoApplicationUpdater/blob/master/SampleDeployment/Example.json";
         public MainWindow()
         {
             InitializeComponent();
@@ -14,8 +16,8 @@ namespace Example
 
         private async Task CheckForUpdate()
         {
-            //Hard-code the URL that contains the data for verison information and self-update.
-            string remoteUpdateMainfestURL = "https://github.com/russjudge/RussJudge.AutoApplicationUpdater/blob/master/SampleDeployment/Example.json";
+
+
             RussJudge.AutoApplicationUpdater.UpdateChecker checker = new();
             var assm = System.Reflection.Assembly.GetExecutingAssembly();
             if (await checker.CheckRemote(assm, remoteUpdateMainfestURL))
@@ -28,7 +30,7 @@ namespace Example
                 }
                 else
                 {
-                    DoUpdate = MessageBox.Show("An update is available.  Do you wish to update?", "Example", MessageBoxButton.YesNo) == MessageBoxResult.Yes;
+                    DoUpdate = MessageBox.Show("An update is available.  Do you wish to update?\r\n(Please don't--this is just an example for how to code this, but it will work)", "Example", MessageBoxButton.YesNo) == MessageBoxResult.Yes;
                 }
 
                 if (DoUpdate)
