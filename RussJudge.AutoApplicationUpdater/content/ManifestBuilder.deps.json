@@ -8,17 +8,17 @@
     ".NETCoreApp,Version=v9.0": {
       "ManifestBuilder/1.0.0": {
         "dependencies": {
-          "RussJudge.AutoApplicationUpdater": "1.0.0"
+          "RussJudge.AutoApplicationUpdater": "1.0.2"
         },
         "runtime": {
           "ManifestBuilder.dll": {}
         }
       },
-      "RussJudge.AutoApplicationUpdater/1.0.0": {
+      "RussJudge.AutoApplicationUpdater/1.0.2": {
         "runtime": {
           "RussJudge.AutoApplicationUpdater.dll": {
-            "assemblyVersion": "1.0.0",
-            "fileVersion": "1.0.0.72"
+            "assemblyVersion": "1.0.2",
+            "fileVersion": "1.0.2.88"
           }
         }
       }
@@ -30,7 +30,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "RussJudge.AutoApplicationUpdater/1.0.0": {
+    "RussJudge.AutoApplicationUpdater/1.0.2": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

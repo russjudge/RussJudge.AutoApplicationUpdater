@@ -11,8 +11,8 @@
     <Copyright>Copyright (c) 2024 $(Authors)</Copyright>
     <PackageIcon>rjicon2.png</PackageIcon>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <FileVersion>1.0.1.83</FileVersion>
-    <AssemblyVersion>1.0.1.83</AssemblyVersion>
+    <FileVersion>1.0.2.89</FileVersion>
+    <AssemblyVersion>1.0.2.89</AssemblyVersion>
     <Title>RussJudge.AutoApplicationUpdater</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/russjudge/RussJudge.AutoApplicationUpdater</RepositoryUrl>
@@ -21,55 +21,38 @@
     <PackageProjectUrl>https://russjudge.com</PackageProjectUrl>
     <PackageReleaseNotes>VersionBump and ManifestBuilder executables did not get included in original Nuget package.</PackageReleaseNotes>
     <PackageTags>Update; automatic update; self update; updater</PackageTags>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="lib\ManifestBuilder.deps.json" />
-    <None Remove="lib\ManifestBuilder.dll" />
-    <None Remove="lib\ManifestBuilder.exe" />
-    <None Remove="lib\ManifestBuilder.pdb" />
-    <None Remove="lib\netcore\ManifestBuilder.dll" />
-    <None Remove="lib\netcore\ManifestBuilder.exe" />
-    <None Remove="lib\netcore\ManifestBuilder.runtimeconfig.json" />
-    <None Remove="lib\netcore\VersionBump.dll" />
-    <None Remove="lib\netcore\VersionBump.exe" />
-    <None Remove="lib\VersionBump.deps.json" />
-    <None Remove="lib\VersionBump.dll" />
-    <None Remove="lib\VersionBump.exe" />
-    <None Remove="lib\VersionBump.pdb" />
-    <None Remove="lib\VersionBump.runtimeconfig.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="lib\netcore\ManifestBuilder.deps.json">
+    <Content Include="content\ManifestBuilder.deps.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\ManifestBuilder.dll">
+    <Content Include="content\ManifestBuilder.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\ManifestBuilder.exe">
+    <Content Include="content\ManifestBuilder.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\ManifestBuilder.pdb">
+    <Content Include="content\ManifestBuilder.pdb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\ManifestBuilder.runtimeconfig.json">
+    <Content Include="content\ManifestBuilder.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\VersionBump.deps.json">
+    <Content Include="content\VersionBump.deps.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\VersionBump.dll">
+    <Content Include="content\VersionBump.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\VersionBump.exe">
+    <Content Include="content\VersionBump.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\VersionBump.pdb">
+    <Content Include="content\VersionBump.pdb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="lib\netcore\VersionBump.runtimeconfig.json">
+    <Content Include="content\VersionBump.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="rjicon.ico" />
@@ -90,7 +73,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(ProjectDir)lib\netcore\VersionBump.exe $(ProjectFileName)" />
+    <Exec Command="$(ProjectDir)content\VersionBump.exe $(ProjectFileName)" />
   </Target>
 
 </Project>

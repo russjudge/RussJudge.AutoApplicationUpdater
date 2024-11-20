@@ -7,8 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
-    <FileVersion>1.0.0.49</FileVersion>
-    <AssemblyVersion>1.0.0.49</AssemblyVersion>
+    <FileVersion>1.0.0.51</FileVersion>
+    <AssemblyVersion>1.0.0.51</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(SolutionDir)RussJudge.AutoApplicationUpdater\lib\netcore\VersionBump.exe $(ProjectFileName)" />
+    <Exec Command="$(SolutionDir)RussJudge.AutoApplicationUpdater\content\VersionBump.exe $(ProjectFileName)" />
   </Target>
 
 </Project>
