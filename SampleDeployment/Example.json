@@ -1,1 +1,9 @@
-{"Executable":"Example.exe","Version":"1.0.0.16","FilePackageName":"ExampleSetup.zip","FilePackageSize":451792,"FilePackageChecksum":"fa2b213aebf363ae0e962e93b0c2be75","IsRequired":false,"RemoteURLSourcePackage":"https://github.com/russjudge/RussJudge.AutoApplicationUpdater/blob/master/SampleDeployment/ExampleSetup.zip"}
+{
+  "Executable": "Example.exe",
+  "Version": "1.0.0.48",
+  "FilePackageName": "ExampleSetup.zip",
+  "FilePackageSize": 457582,
+  "FilePackageChecksum": "e25f5b1a78f9cc1e0502a11330224a6e",
+  "IsRequired": false,
+  "RemoteURLSourcePackage": "https://raw.githubusercontent.com/russjudge/RussJudge.AutoApplicationUpdater/refs/heads/master/SampleDeployment/ExampleSetup.zip"
+}

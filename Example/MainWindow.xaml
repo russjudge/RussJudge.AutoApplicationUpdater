@@ -6,12 +6,66 @@
         xmlns:local="clr-namespace:Example"
         mc:Ignorable="d"
         Loaded="OnLoaded"
-        Title="MainWindow" Height="450" Width="800">
-    <DockPanel>
-        <StackPanel Orientation="Horizontal">
-            <TextBlock
+        Title="RussJudge.AutoApplicationUpdater Example Project" SizeToContent="Height" Width="820">
+    <DockPanel Margin="5,5,5,5">
+        <TextBlock
+                DockPanel.Dock="Top"
                 TextWrapping="Wrap"
-                Text="An update for this Example was check for upon load.  If a newer version was available, you would have received a prompt." />
+                Text="An update for this Example was check for upon load.  If a newer version was available, you would have received a prompt.  If you wish to test this, then manually set the verison number of this project to a version below the Remote Manifest Version number below." />
+
+        <StackPanel
+            Margin="0,5,0,5"
+            DockPanel.Dock="Top" Orientation="Horizontal">
+            <TextBlock FontWeight="Bold" Text="Current Version:" Padding="0,0,5,0"/>
+            <TextBlock Text="{Binding AssemblyVersion}" />
         </StackPanel>
+        <Grid
+            Margin="0,5,0,5"
+            DockPanel.Dock="Top" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" FontWeight="Bold" Text="Remote Manifest Version:" Padding="0,0,5,0"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding RemoteVersion}" />
+            <TextBlock Grid.Row="1" Grid.Column="0" FontWeight="Bold" Text="Remote Package Name:" Padding="0,0,5,0"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PackageName}" />
+            <TextBlock Grid.Row="2" Grid.Column="0" FontWeight="Bold" Text="Remote Package Checksum:" Padding="0,0,5,0"/>
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding PackageCheckSum}" />
+            <TextBlock Grid.Row="3" Grid.Column="0" FontWeight="Bold" Text="Remote Package URL:" Padding="0,0,5,0"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding RemotePackageURL}" />
+        </Grid>
+        <WrapPanel
+            Margin="0,5,0,5"
+            DockPanel.Dock="Top">
+            <Button
+                Margin="5,5,5,5"
+                Padding="5,5,5,5"
+                Content="Run Update Check" Click="OnUpdateCheck" />
+            <Button
+                Margin="5,5,5,5"
+                Padding="5,5,5,5"
+                Content="Get Remote UpdateManifest information" Click="OnGetRemoteManifest" />
+
+            <Button
+                Margin="5,5,5,5"
+                Padding="5,5,5,5"
+                Content="Non-HTTP Update check method" Click="OnNonHTTPUpdateCheck" />
+
+            <Button
+                Margin="5,5,5,5"
+                Padding="5,5,5,5"
+                Content="Non-HTTP Validate Package Checksum" Click="OnNonHTTPValidatePackageChecksum" />
+            <Button
+                Margin="5,5,5,5"
+                Padding="5,5,5,5"
+                Content="Install local installer package" Click="OnInstallLocalPackage" />
+        </WrapPanel>
     </DockPanel>
 </Window>

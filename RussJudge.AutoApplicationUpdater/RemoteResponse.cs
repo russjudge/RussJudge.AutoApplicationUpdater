@@ -26,6 +26,7 @@ namespace RussJudge.AutoApplicationUpdater
             RequestMessage = requestMessage;
             IsSuccess = isSuccess;
             ManifestFile = new(updateManifestContent);
+
         }
 
         /// <summary>
@@ -54,6 +55,6 @@ namespace RussJudge.AutoApplicationUpdater
         /// <summary>
         /// Flag that indicates that the check for update or the download of the installer package was successful.
         /// </summary>
-        public bool IsSuccess { get; private set; }
+        public bool IsSuccess { get; internal set; }
     }
 }

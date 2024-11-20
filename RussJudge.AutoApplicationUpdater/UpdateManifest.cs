@@ -1,19 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-using System.Threading.Tasks;
 
 namespace RussJudge.AutoApplicationUpdater
 {
@@ -23,10 +15,50 @@ namespace RussJudge.AutoApplicationUpdater
     /// </summary>
     public class UpdateManifest
     {
+        private const string DLLExtension = ".dll";
+        private const string EXEExtension = ".exe";
+        private const string zeroVersion = "0.0.0.0";
         /// <summary>
         /// Extension used for the Application version information file for automatic self-update.
         /// </summary>
         public const string DefaultManifestExtension = ".json";
+        /// <summary>
+        /// The file extension for zip files.
+        /// </summary>
+        public const string ZIPExtension = ".zip";
+        internal UpdateManifest() { }
+
+        /// <summary>
+        /// Instantiated UpdateManifest object.
+        /// </summary>
+        /// <param name="Executable"></param>
+        /// <param name="Version"></param>
+        /// <param name="RemoteURLSourcePackage"></param>
+        /// <param name="FilePackageName"></param>
+        /// <param name="FilePackageSize"></param>
+        /// <param name="FilePackageChecksum"></param>
+        /// <param name="IsRequired"></param>
+        [JsonConstructor]
+        public UpdateManifest(
+            string Executable,
+            string Version,
+            string RemoteURLSourcePackage,
+            string FilePackageName,
+            long FilePackageSize,
+            string FilePackageChecksum,
+            bool IsRequired)
+        {
+            this.Executable = Executable;
+            this.Version = Version;
+            this.FilePackageName = FilePackageName;
+
+            this.FilePackageSize = FilePackageSize;
+
+            this.FilePackageChecksum = FilePackageChecksum;
+
+            this.IsRequired = IsRequired;
+            this.RemoteURLSourcePackage = RemoteURLSourcePackage;
+        }
 
         /// <summary>
         /// List of supported compression types, in addition to zip.
@@ -36,24 +68,51 @@ namespace RussJudge.AutoApplicationUpdater
                     new("br", typeof(System.IO.Compression.BrotliStream)),
                     new("zlib", typeof(System.IO.Compression.ZLibStream)) ]);
 
-        internal static string? LastError { get; set; }
-        internal static string? Decompress(string compressedFile, Type compressorType)
+        /// <summary>
+        /// Provides the last error message that occurred, if any.
+        /// </summary>
+        public static string? LastError { get; set; }
+
+        /// <summary>
+        /// Decompress a file.
+        /// </summary>
+        /// <param name="compressedFile">The path to the compressed file.  Naming convension must include the compressed file extension 
+        /// appended to the uncompressed file name</param>
+        /// <returns>Path to the decompressed file.</returns>
+        public static string? Decompress(string compressedFile)
         {
             string? retVal = null;
+            LastError = null;
             int pos = compressedFile.LastIndexOf('.');
+
+
             if (pos > 0)
             {
                 try
                 {
                     retVal = compressedFile[..pos];
-                    using FileStream compressedFileStream = File.Open(compressedFile, FileMode.Open);
-                    using FileStream outputFileStream = File.Create(retVal);
+                    string compressedExt = compressedFile[retVal.Length..];
 
-                    ConstructorInfo? constructor = compressorType.GetConstructor([typeof(Stream), typeof(CompressionMode)]);
-                    if (constructor != null)
+
+                    if (CompressionTypes.TryGetValue(compressedExt, out Type? compressorType) && compressorType != null)
                     {
-                        using var decompressor = (Stream)constructor.Invoke([compressedFileStream, CompressionMode.Decompress]);
-                        decompressor.CopyTo(outputFileStream);
+                        using FileStream compressedFileStream = File.Open(compressedFile, FileMode.Open);
+                        using FileStream outputFileStream = File.Create(retVal);
+
+                        ConstructorInfo? constructor = compressorType.GetConstructor([typeof(Stream), typeof(CompressionMode)]);
+                        if (constructor != null)
+                        {
+                            using var decompressor = (Stream)constructor.Invoke([compressedFileStream, CompressionMode.Decompress]);
+                            decompressor.CopyTo(outputFileStream);
+                        }
+                        else
+                        {
+                            LastError = $"Constructor for Type {compressorType} not found. Expecting constructor for ({nameof(Stream)}, {nameof(CompressionMode)})";
+                        }
+                    }
+                    else
+                    {
+                        LastError = "Compressed file extension not recognized.  Only .zip, .gzip, .zlib, and .br are supported.";
                     }
                 }
                 catch (Exception ex)
@@ -63,9 +122,15 @@ namespace RussJudge.AutoApplicationUpdater
             }
             return retVal;
         }
-        internal static string? UnzipFile(string packagedZip)
+        /// <summary>
+        /// Unzips a zip file.
+        /// </summary>
+        /// <param name="packagedZip">Path to the zip file.</param>
+        /// <returns>Path to the last file extracted from the zip.</returns>
+        public static string? UnzipFile(string packagedZip)
         {
             string? retVal = null;
+            LastError = null;
             try
             {
                 using (ZipArchive archive = ZipFile.OpenRead(packagedZip))
@@ -90,14 +155,7 @@ namespace RussJudge.AutoApplicationUpdater
         }
 
 
-        private const string DLLExtension = ".dll";
-        private const string EXEExtension = ".exe";
-        /// <summary>
-        /// The file extension for zip files.
-        /// </summary>
-        public const string ZIPExtension = ".zip";
-
-        static readonly HttpClient httpClient = new();
+        private static readonly HttpClient httpClient = new();
 
         private void LoadManifestData(UpdateManifest? manifest)
         {
@@ -110,9 +168,10 @@ namespace RussJudge.AutoApplicationUpdater
                 this.FilePackageSize = manifest.FilePackageSize;
                 this.IsRequired = manifest.IsRequired;
                 this.RemoteURLSourcePackage = manifest.RemoteURLSourcePackage;
+                this.FilePackageName = manifest.FilePackageName;
             }
         }
-        private UpdateManifest() { }
+
 
         /// <summary>
         /// 
@@ -156,6 +215,7 @@ namespace RussJudge.AutoApplicationUpdater
             else
             {
                 LoadManifestData(Deserialize(jsonOrUpdateManifestFileOrAssemblyPathExecutable));
+
             }
         }
         /// <summary>
@@ -174,7 +234,7 @@ namespace RussJudge.AutoApplicationUpdater
             {
                 if (_versionInfo == null)
                 {
-                    return "0.0.0.0";
+                    return zeroVersion;
                 }
                 else
                 {
@@ -301,6 +361,13 @@ namespace RussJudge.AutoApplicationUpdater
             {
                 string responseBody = await httpClient.GetStringAsync(RemoteSourceManifestFileURL);
                 retVal = new(HttpStatusCode.OK, null, null, true, responseBody);
+                if (retVal.ManifestFile != null)
+                {
+                    if (!string.IsNullOrEmpty(LastError))
+                    {
+                        retVal.IsSuccess = false;
+                    }
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -433,7 +500,7 @@ namespace RussJudge.AutoApplicationUpdater
             }
             else
             {
-                return new("0.0.0.0");
+                return new(zeroVersion);
             }
         }
         /// <summary>
@@ -444,7 +511,7 @@ namespace RussJudge.AutoApplicationUpdater
         public static string GetFileChecksum(string filePath)
         {
             using var stream = File.OpenRead(filePath);
-            return BitConverter.ToString(MD5.HashData(stream)).Replace("-", string.Empty).ToLowerInvariant();
+            return System.Convert.ToHexStringLower(MD5.HashData(stream)); //).Replace("-", string.Empty).ToLowerInvariant();
         }
         /// <summary>
         /// Gets the MD5 hash checksum for the provided file.
@@ -453,7 +520,8 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>The string representation of the MD5 checksum of the file.</returns>
         public static string GetFileChecksum(byte[] bytes)
         {
-            return BitConverter.ToString(MD5.HashData(bytes)).Replace("-", string.Empty).ToLowerInvariant();
+            //return BitConverter.ToString(MD5.HashData(bytes)).Replace("-", string.Empty).ToLowerInvariant();
+            return System.Convert.ToHexStringLower(MD5.HashData(bytes));
         }
         /// <summary>
         /// Serializes the UpdateManifest into JSON data.
@@ -461,7 +529,17 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>The JSON for the UpdateManifest</returns>
         public string Serialize()
         {
-            return JsonSerializer.Serialize(this);
+            return JsonSerializer.Serialize(this, GetJsonOptions());
+        }
+        private static JsonSerializerOptions GetJsonOptions()
+        {
+            return new()
+            {
+                IgnoreReadOnlyProperties = true,
+                IgnoreReadOnlyFields = true,
+                WriteIndented = true,
+                IncludeFields = false
+            };
         }
         /// <summary>
         /// Converts valid JSON into an UpdateManifest object.
@@ -470,7 +548,16 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>The UpdateManifest of the JSON data.</returns>
         public static UpdateManifest? Deserialize(string json)
         {
-            return JsonSerializer.Deserialize<UpdateManifest>(json);
+            try
+            {
+                LastError = null;
+                return JsonSerializer.Deserialize<UpdateManifest>(json, GetJsonOptions());
+            }
+            catch (Exception ex)
+            {
+                LastError = ex.Message;
+                return null;
+            }
         }
     }
 }

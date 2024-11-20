@@ -78,14 +78,14 @@ namespace RussJudge.AutoApplicationUpdater
         /// <summary>
         /// Tests if the passed VersionInfo is a newer version than this VersionInfo.
         /// </summary>
-        /// <param name="versionInfo"></param>
-        /// <returns></returns>
+        /// <param name="versionInfo">The VersionInfo to compare</param>
+        /// <returns>True if the passed VersionInfo is a newer version than this VersionInfo</returns>
         public bool IsNewer(VersionInfo versionInfo)
         {
-            return Major < versionInfo.Major
-                || (Major == versionInfo.Major && Minor < versionInfo.Minor)
-                || (Major == versionInfo.Major && Minor == versionInfo.Minor && Revision < versionInfo.Revision)
-                || (Major == versionInfo.Major && Minor == versionInfo.Minor && Revision == versionInfo.Revision && Build < versionInfo.Build);
+            return Major > versionInfo.Major
+                || (Major == versionInfo.Major && Minor > versionInfo.Minor)
+                || (Major == versionInfo.Major && Minor == versionInfo.Minor && Revision > versionInfo.Revision)
+                || (Major == versionInfo.Major && Minor == versionInfo.Minor && Revision == versionInfo.Revision && Build > versionInfo.Build);
         }
     }
 }

@@ -55,6 +55,13 @@
             Last response from connection to the remote server for checking for update or downloading the installer package.
             </summary>
         </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.Update(System.String)">
+            <summary>
+            Installs the Package installer, decompressing the file first if necessary.
+            </summary>
+            <param name="localInstallerPackagePath">The path to the installer package.</param>
+            <returns>Null if successful, or the error message if not.</returns>
+        </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.UpdateFromRemote(System.String)">
             <summary>
             Downloads the remote installer package and executes it.
@@ -94,15 +101,47 @@
             Extension used for the Application version information file for automatic self-update.
             </summary>
         </member>
+        <member name="F:RussJudge.AutoApplicationUpdater.UpdateManifest.ZIPExtension">
+            <summary>
+            The file extension for zip files.
+            </summary>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.#ctor(System.String,System.String,System.String,System.String,System.Int64,System.String,System.Boolean)">
+            <summary>
+            Instantiated UpdateManifest object.
+            </summary>
+            <param name="Executable"></param>
+            <param name="Version"></param>
+            <param name="RemoteURLSourcePackage"></param>
+            <param name="FilePackageName"></param>
+            <param name="FilePackageSize"></param>
+            <param name="FilePackageChecksum"></param>
+            <param name="IsRequired"></param>
+        </member>
         <member name="P:RussJudge.AutoApplicationUpdater.UpdateManifest.CompressionTypes">
             <summary>
             List of supported compression types, in addition to zip.
             </summary>
         </member>
-        <member name="F:RussJudge.AutoApplicationUpdater.UpdateManifest.ZIPExtension">
+        <member name="P:RussJudge.AutoApplicationUpdater.UpdateManifest.LastError">
             <summary>
-            The file extension for zip files.
+            Provides the last error message that occurred, if any.
             </summary>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.Decompress(System.String)">
+            <summary>
+            Decompress a file.
+            </summary>
+            <param name="compressedFile">The path to the compressed file.  Naming convension must include the compressed file extension 
+            appended to the uncompressed file name</param>
+            <returns>Path to the decompressed file.</returns>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.UnzipFile(System.String)">
+            <summary>
+            Unzips a zip file.
+            </summary>
+            <param name="packagedZip">Path to the zip file.</param>
+            <returns>Path to the last file extracted from the zip.</returns>
         </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.#ctor(System.String,System.String)">
             <summary>
@@ -247,8 +286,8 @@
             <summary>
             Tests if the passed VersionInfo is a newer version than this VersionInfo.
             </summary>
-            <param name="versionInfo"></param>
-            <returns></returns>
+            <param name="versionInfo">The VersionInfo to compare</param>
+            <returns>True if the passed VersionInfo is a newer version than this VersionInfo</returns>
         </member>
     </members>
 </doc>

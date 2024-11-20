@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace RussJudge.AutoApplicationUpdater
 {
@@ -25,7 +18,61 @@ namespace RussJudge.AutoApplicationUpdater
         /// </summary>
         public RemoteResponse? LastRemoteResponse { get; private set; }
 
+        /// <summary>
+        /// Installs the Package installer, decompressing the file first if necessary.
+        /// </summary>
+        /// <param name="localInstallerPackagePath">The path to the installer package.</param>
+        /// <returns>Null if successful, or the error message if not.</returns>
+        public static string? Update(string localInstallerPackagePath)
+        {
 
+            bool canProceed = true;
+
+            string? retVal = null;
+            try
+            {
+                FileInfo package = new(localInstallerPackagePath);
+                if (package.Extension.Equals(UpdateManifest.ZIPExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    string? decompressedFile = UpdateManifest.UnzipFile(localInstallerPackagePath);
+                    if (string.IsNullOrEmpty(decompressedFile))
+                    {
+                        retVal = UpdateManifest.LastError;
+                    }
+                    else
+                    {
+                        localInstallerPackagePath = decompressedFile;
+                    }
+                }
+                else
+                {
+                    var decompressedFile = UpdateManifest.Decompress(localInstallerPackagePath);
+                    if (string.IsNullOrEmpty(decompressedFile))
+                    {
+                        retVal = UpdateManifest.LastError;
+                    }
+                    else
+                    {
+                        localInstallerPackagePath = decompressedFile;
+                    }
+                }
+                if (canProceed)
+                {
+                    ProcessStartInfo startInfo = new(localInstallerPackagePath)
+                    {
+                        UseShellExecute = true
+                    };
+                    Process.Start(startInfo);
+                    retVal = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                retVal = ex.Message;
+            }
+            return retVal;
+
+        }
         /// <summary>
         /// Downloads the remote installer package and executes it.
         /// </summary>
@@ -44,51 +91,14 @@ namespace RussJudge.AutoApplicationUpdater
                     {
                         if (RemoteManifestFile.PackageIsValid(setupPackage))
                         {
-
                             try
                             {
-                                bool canProceed = true;
                                 string packageFile = Path.Combine(Path.GetTempPath(), RemoteManifestFile.FilePackageName);
                                 using (FileStream fs = new(packageFile, FileMode.Create))
                                 {
                                     fs.Write(setupPackage, 0, setupPackage.Length);
                                 }
-
-                                FileInfo package = new(packageFile);
-                                if (package.Extension.Equals(UpdateManifest.ZIPExtension, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    string? decompressedFile = UpdateManifest.UnzipFile(packageFile);
-                                    if (string.IsNullOrEmpty(decompressedFile))
-                                    {
-                                        retVal = UpdateManifest.LastError;
-                                    }
-                                    else
-                                    {
-                                        packageFile = decompressedFile;
-                                    }
-                                }
-                                else if (UpdateManifest.CompressionTypes.TryGetValue(package.Extension.ToLowerInvariant(), out var compressionType)
-                                    && compressionType != null)
-                                {
-                                    var decompressedFile = UpdateManifest.Decompress(packageFile, compressionType);
-                                    if (string.IsNullOrEmpty(decompressedFile))
-                                    {
-                                        retVal = UpdateManifest.LastError;
-                                    }
-                                    else
-                                    {
-                                        packageFile = decompressedFile;
-                                    }
-                                }
-                                if (canProceed)
-                                {
-                                    ProcessStartInfo startInfo = new(packageFile)
-                                    {
-                                        UseShellExecute = true
-                                    };
-                                    Process.Start(startInfo);
-                                    retVal = null;
-                                }
+                                retVal = Update(packageFile);
                             }
                             catch (Exception ex)
                             {
@@ -131,9 +141,6 @@ namespace RussJudge.AutoApplicationUpdater
                 return UpdateFromRemote(RemoteManifestFile.RemoteURLSourcePackage);
             }
         }
-
-
-
         /// <summary>
         /// Checks if an update is available.
         /// </summary>

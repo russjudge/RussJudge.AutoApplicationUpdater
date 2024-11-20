@@ -11,8 +11,8 @@
     <Copyright>Copyright (c) 2024 $(Authors)</Copyright>
     <PackageIcon>rjicon2.png</PackageIcon>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <FileVersion>1.0.0.53</FileVersion>
-    <AssemblyVersion>1.0.0.53</AssemblyVersion>
+    <FileVersion>1.0.0.78</FileVersion>
+    <AssemblyVersion>1.0.0.78</AssemblyVersion>
     <Title>RussJudge.AutoApplicationUpdater</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/russjudge/RussJudge.AutoApplicationUpdater</RepositoryUrl>

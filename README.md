@@ -64,6 +64,59 @@ then it will not be considered an update.
 
 If an update is detected, the file checksum is verified before installing the update.
 
+This automatic update check only works when the remote is over http or https.  Using a different mechanism is only possibly by working with the
+UpdateManifest class, and not the UpdateChecker class.
+
+## Performing an update check over something other than http or https
+
+The UpdateChecker class only works over http or https, therefore to update over ftp or some other source, you will need to create the code to download
+the UpdateManifest file and the installer package.  You can then use the UpdateManifest class to compare the version of your assembly versus the
+remote version and determine if an update is available.
+
+Below is sample code for performing this:
+```
+//Non-http method for checking for update
+public bool CheckForUpdate(string localPathToRemoteUpdateManifestFile)
+{
+    //This code assumes that the remote UpdateManifest file has already been downloaded and can be found in localPathToRemoteUpdateManifestFile.
+
+    var remoteManifest = UpdateManifest.GetManifestFile(localPathToRemoteUpdateManifestFile);
+    return remoteManifest.NeedsUpdated(System.Reflection.Assembly.GetExecutingAssembly().Location);
+    //The remote location will be stored in remoteManifest.RemoteURLSourcePackage.
+}
+```
+
+You can also validate the Checksum of the downloaded package by comparing the checksum in the UpdateManifest file against the checksum
+the UpdateManifest class generates on the local file.  Below is sample code for validating that the installer package was downloaded
+correctly or has not been maliciously replaced:
+
+```
+public bool ValidateInstallerPackage(string localPathToRemoteUpdateManifestFile, string pathToDownloadedInstallerPackage)
+{
+    var remoteManifest = UpdateManifest.GetManifestFile(localPathToRemoteUpdateManifestFile);
+    return remoteManifest.PackageIsValid(pathToDownloadedInstallerPackage);
+}
+
+```
+
+Finally, you can process the update by running the Update method of the UpdateChecker class:
+
+```
+public void RunInstallProcess(string installPath)
+{
+    var result = UpdateChecker.Update(installPath);
+    if (result != null)
+    {
+        MessageBox.Show($"The update failed:\r\n{result}");
+    }
+    else
+    {
+        MessageBox.Show("The installer successfully started.  Press \"OK\" to exit.");
+        Environment.Exit(0);
+    }
+}
+```
+
 ## Creating the UpdateManifest file.
 
 The UpdateManifest file needed to check if an update is available is a simple JSON file.

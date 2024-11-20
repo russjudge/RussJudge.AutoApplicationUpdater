@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
-    <FileVersion>1.0.0.17</FileVersion>
-    <AssemblyVersion>1.0.0.17</AssemblyVersion>
+    <FileVersion>1.0.0.19</FileVersion>
+    <AssemblyVersion>1.0.0.19</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
