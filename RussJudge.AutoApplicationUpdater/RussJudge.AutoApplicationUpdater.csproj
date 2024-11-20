@@ -11,14 +11,16 @@
     <Copyright>Copyright (c) 2024 $(Authors)</Copyright>
     <PackageIcon>rjicon2.png</PackageIcon>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <FileVersion>1.0.0.78</FileVersion>
-    <AssemblyVersion>1.0.0.78</AssemblyVersion>
+    <FileVersion>1.0.0.79</FileVersion>
+    <AssemblyVersion>1.0.0.79</AssemblyVersion>
     <Title>RussJudge.AutoApplicationUpdater</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/russjudge/RussJudge.AutoApplicationUpdater</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>This provides a simplified mechanism for providing self-update check and install of any application that uses a Microsoft Setup Installer (.msi).</Description>
     <PackageProjectUrl>https://russjudge.com</PackageProjectUrl>
+    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
+    <PackageTags>Update; automatic update; self update; updater</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
