@@ -199,3 +199,9 @@ result being the same either way.
 
 Add ManifestBuilder to the Post Build event of the Setup project (.vdproj) with appropriate parameters.  This will result in the update manifest file
 being added after the setup package is built, along with creating a compressed file (if desired) of the setup package in that same folder.
+
+
+## Where to find ManifestBuilder and VersionBump
+When you install the NuGet package RussJudge.AutoApplicationUpdater, ManifestBuilder and VersionBump
+can be found by expanding the linked "content" folder.  The properties will reflect the full path, 
+which will generally be located at "%USERPROFILE%\.nuget\packages\russjudge.autoapplicationupdater\<package_version>\contentFiles\any\net9.0\content"
