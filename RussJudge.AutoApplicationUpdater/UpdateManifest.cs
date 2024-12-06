@@ -81,7 +81,7 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>Path to the decompressed file.</returns>
         public static string? Decompress(string compressedFile)
         {
-            string? retVal = null;
+            string? retVal = compressedFile;
             LastError = null;
             int pos = compressedFile.LastIndexOf('.');
 
