@@ -7,7 +7,10 @@ namespace RussJudge.AutoApplicationUpdater
     /// </summary>
     public class UpdateChecker
     {
-        private UpdateManifest? RemoteManifestFile;
+        /// <summary>
+        /// Remote UpdateManifest file
+        /// </summary>
+        public UpdateManifest? RemoteManifestFile { get; private set; }
         /// <summary>
         /// Indicates whether or not the update is required.
         /// </summary>
@@ -44,7 +47,7 @@ namespace RussJudge.AutoApplicationUpdater
                         localInstallerPackagePath = decompressedFile;
                     }
                 }
-                else
+                else if (UpdateManifest.CompressionTypes.ContainsKey(package.Extension.ToLowerInvariant()))
                 {
                     var decompressedFile = UpdateManifest.Decompress(localInstallerPackagePath);
                     if (string.IsNullOrEmpty(decompressedFile))
@@ -55,6 +58,10 @@ namespace RussJudge.AutoApplicationUpdater
                     {
                         localInstallerPackagePath = decompressedFile;
                     }
+                }
+                else
+                {
+
                 }
                 if (canProceed)
                 {

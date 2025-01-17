@@ -107,17 +107,20 @@ namespace RussJudge.AutoApplicationUpdater
                         }
                         else
                         {
+                            retVal = null;
                             LastError = $"Constructor for Type {compressorType} not found. Expecting constructor for ({nameof(Stream)}, {nameof(CompressionMode)})";
                         }
                     }
                     else
                     {
+                        retVal = null;
                         LastError = "Compressed file extension not recognized.  Only .zip, .gzip, .zlib, and .br are supported.";
                     }
                 }
                 catch (Exception ex)
                 {
                     LastError = ex.Message;
+                    retVal = null;
                 }
             }
             return retVal;
