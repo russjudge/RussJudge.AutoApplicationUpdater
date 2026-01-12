@@ -80,17 +80,25 @@ namespace RussJudge.AutoApplicationUpdater
             return retVal;
 
         }
+
+
+
         /// <summary>
         /// Downloads the remote installer package and executes it.
         /// </summary>
         /// <param name="remoteURLForPackage">The direct http url link to the installer package.</param>
+        /// <param name="fallbackURL">Fallback URL to use if the first one fails.</param>
         /// <returns>The error message if the process fails, or null if successful.</returns>
-        public async Task<string?> UpdateFromRemote(string remoteURLForPackage)
+        public async Task<string?> UpdateFromRemote(string remoteURLForPackage, string fallbackURL = "")
         {
             string? retVal = "Update Failed";
             if (RemoteManifestFile != null)
             {
                 LastRemoteResponse = await RemoteManifestFile.GetRemotePackage(remoteURLForPackage);
+                if ((LastRemoteResponse == null || !LastRemoteResponse.IsSuccess) && !string.IsNullOrEmpty(fallbackURL))
+                {
+                    LastRemoteResponse = await RemoteManifestFile.GetRemotePackage(fallbackURL);
+                }
                 if (LastRemoteResponse != null && LastRemoteResponse.IsSuccess)
                 {
                     var setupPackage = LastRemoteResponse.InstallerPackageContent;
@@ -153,24 +161,31 @@ namespace RussJudge.AutoApplicationUpdater
         /// </summary>
         /// <param name="AssemblyForVersionCheck">Generally the entry assembly, or whatever assembly is used for version-checking.</param>
         /// <param name="URL">The remote URL to the UpdateManifest file.</param>
+        /// <param name="fallbackURL">An optional URL to use for failover.</param>
         /// <returns>True if there is an update available.</returns>
-        public Task<bool> CheckRemote(System.Reflection.Assembly AssemblyForVersionCheck, string URL)
+        public Task<bool> CheckRemote(System.Reflection.Assembly AssemblyForVersionCheck, string URL, string fallbackURL = "")
         {
-            return CheckRemote(AssemblyForVersionCheck.Location, URL);
+            return CheckRemote(AssemblyForVersionCheck.Location, URL, fallbackURL);
         }
         /// <summary>
         /// Checks if an update is available.
         /// </summary>
         /// <param name="AssemblyForVersionCheckLocation">Generally the entry assembly, or whatever assembly is used for version-checking.</param>
         /// <param name="URL">The remote URL to the UpdateManifest file.</param>
+        /// <param name="fallbackURL">An optional URL to use for failover.</param>
         /// <returns>True if there is an update available.</returns>
-        public async Task<bool> CheckRemote(string AssemblyForVersionCheckLocation, string URL)
+        public async Task<bool> CheckRemote(string AssemblyForVersionCheckLocation, string URL, string fallbackURL = "")
         {
             LastRemoteResponse = await UpdateManifest.GetRemoteManifestFile(URL);
+            if ((LastRemoteResponse == null || !LastRemoteResponse.IsSuccess) && !string.IsNullOrEmpty(fallbackURL))
+            {
+                LastRemoteResponse = await UpdateManifest.GetRemoteManifestFile(fallbackURL);
+            }
             if (LastRemoteResponse != null && LastRemoteResponse.IsSuccess)
             {
                 RemoteManifestFile = LastRemoteResponse.ManifestFile;
             }
+
             if (RemoteManifestFile != null)
             {
                 IsRequired = RemoteManifestFile.IsRequired;

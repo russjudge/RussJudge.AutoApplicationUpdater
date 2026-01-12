@@ -13,6 +13,7 @@ namespace Example
     {
         //Hard-code the URL that contains the data for verison information and self-update.
         const string remoteUpdateMainfestURL = "https://raw.githubusercontent.com/russjudge/RussJudge.AutoApplicationUpdater/refs/heads/master/SampleDeployment/Example.json";
+        const string remoteUpdateMainfestURL2 = "http://10.10.111.15/software/manifest.json";
         public MainWindow()
         {
             InitializeComponent();
@@ -113,7 +114,7 @@ namespace Example
         {
             RussJudge.AutoApplicationUpdater.UpdateChecker checker = new();
             var assm = System.Reflection.Assembly.GetExecutingAssembly();
-            if (await checker.CheckRemote(assm, remoteUpdateMainfestURL))
+            if (await checker.CheckRemote(assm, remoteUpdateMainfestURL2, remoteUpdateMainfestURL))
             {
                 bool DoUpdate;
                 if (checker.IsRequired)
