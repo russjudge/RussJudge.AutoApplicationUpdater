@@ -21,6 +21,8 @@ namespace RussJudge.AutoApplicationUpdater
         /// </summary>
         public RemoteResponse? LastRemoteResponse { get; private set; }
 
+        private const string DecompressFailedMessage = "Unable to decompress the installer package.";
+
         /// <summary>
         /// Installs the Package installer, decompressing the file first if necessary.
         /// </summary>
@@ -40,19 +42,21 @@ namespace RussJudge.AutoApplicationUpdater
                     string? decompressedFile = UpdateManifest.UnzipFile(localInstallerPackagePath);
                     if (string.IsNullOrEmpty(decompressedFile))
                     {
-                        retVal = UpdateManifest.LastError;
+                        retVal = UpdateManifest.LastError ?? DecompressFailedMessage;
+                        canProceed = false;
                     }
                     else
                     {
                         localInstallerPackagePath = decompressedFile;
                     }
                 }
-                else if (UpdateManifest.CompressionTypes.ContainsKey(package.Extension.ToLowerInvariant()))
+                else if (UpdateManifest.CompressionTypes.ContainsKey(package.Extension))
                 {
                     var decompressedFile = UpdateManifest.Decompress(localInstallerPackagePath);
                     if (string.IsNullOrEmpty(decompressedFile))
                     {
-                        retVal = UpdateManifest.LastError;
+                        retVal = UpdateManifest.LastError ?? DecompressFailedMessage;
+                        canProceed = false;
                     }
                     else
                     {
@@ -69,7 +73,8 @@ namespace RussJudge.AutoApplicationUpdater
                     {
                         UseShellExecute = true
                     };
-                    Process.Start(startInfo);
+                    //Disposing only releases this application's handle to the installer--the installer keeps running.
+                    using Process? installer = Process.Start(startInfo);
                     retVal = null;
                 }
             }
@@ -94,25 +99,27 @@ namespace RussJudge.AutoApplicationUpdater
             string? retVal = "Update Failed";
             if (RemoteManifestFile != null)
             {
-                LastRemoteResponse = await RemoteManifestFile.GetRemotePackage(remoteURLForPackage);
+                //ConfigureAwait(false) keeps the work that follows the download (verifying, saving, and decompressing
+                //the package) off of the caller's UI thread.
+                string packageURL = remoteURLForPackage;
+                LastRemoteResponse = await RemoteManifestFile.GetRemotePackage(packageURL).ConfigureAwait(false);
                 if ((LastRemoteResponse == null || !LastRemoteResponse.IsSuccess) && !string.IsNullOrEmpty(fallbackURL))
                 {
-                    LastRemoteResponse = await RemoteManifestFile.GetRemotePackage(fallbackURL);
+                    packageURL = fallbackURL;
+                    LastRemoteResponse = await RemoteManifestFile.GetRemotePackage(packageURL).ConfigureAwait(false);
                 }
                 if (LastRemoteResponse != null && LastRemoteResponse.IsSuccess)
                 {
                     var setupPackage = LastRemoteResponse.InstallerPackageContent;
                     if (setupPackage != null && setupPackage.Length > 0)
                     {
-                        if (RemoteManifestFile.PackageIsValid(setupPackage))
+                        //The download already compared the package against the manifest's checksum when one was provided.
+                        if (LastRemoteResponse.PackageChecksumVerified || RemoteManifestFile.PackageIsValid(setupPackage))
                         {
                             try
                             {
-                                string packageFile = Path.Combine(Path.GetTempPath(), RemoteManifestFile.FilePackageName);
-                                using (FileStream fs = new(packageFile, FileMode.Create))
-                                {
-                                    fs.Write(setupPackage, 0, setupPackage.Length);
-                                }
+                                string packageFile = Path.Combine(Path.GetTempPath(), GetPackageFileName(RemoteManifestFile, packageURL));
+                                await File.WriteAllBytesAsync(packageFile, setupPackage).ConfigureAwait(false);
                                 retVal = Update(packageFile);
                             }
                             catch (Exception ex)
@@ -141,6 +148,23 @@ namespace RussJudge.AutoApplicationUpdater
             }
             return retVal;
         }
+
+        /// <summary>
+        /// Determines the name to save the downloaded installer package as.
+        /// </summary>
+        private static string GetPackageFileName(UpdateManifest manifest, string packageURL)
+        {
+            //Only the name is taken: the manifest comes from the remote, and must not be able to steer the package to a location outside of the temp folder.
+            string retVal = Path.GetFileName(manifest.FilePackageName);
+            if (string.IsNullOrEmpty(retVal))
+            {
+                //The manifest did not name the package, so use the name it was downloaded as.
+                string urlPath = Uri.TryCreate(packageURL, UriKind.Absolute, out Uri? uri) ? Uri.UnescapeDataString(uri.AbsolutePath) : packageURL;
+                retVal = Path.GetFileName(urlPath);
+            }
+            return retVal;
+        }
+
         /// <summary>
         /// Downloads the remote installer package and executes it.
         /// </summary>
@@ -149,7 +173,8 @@ namespace RussJudge.AutoApplicationUpdater
         {
             if (RemoteManifestFile == null)
             {
-                return new Task<string?>(() => { return "Unable to update--Remote Update Manifest is not loaded."; });
+                //This must be a completed task: a task created with "new Task" is never started, so awaiting it would never return.
+                return Task.FromResult<string?>("Unable to update--Remote Update Manifest is not loaded.");
             }
             else
             {
@@ -165,7 +190,15 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>True if there is an update available.</returns>
         public Task<bool> CheckRemote(System.Reflection.Assembly AssemblyForVersionCheck, string URL, string fallbackURL = "")
         {
-            return CheckRemote(AssemblyForVersionCheck.Location, URL, fallbackURL);
+            string location = AssemblyForVersionCheck.Location;
+            if (string.IsNullOrEmpty(location))
+            {
+                //An assembly bundled into a single-file application has no location.  Its version must be read from the
+                //assembly itself, otherwise it is seen as version 0.0.0.0 and an update is reported on every check.
+                VersionInfo localVersion = new(AssemblyForVersionCheck);
+                return CheckRemote(manifest => manifest.NeedsUpdated(localVersion), URL, fallbackURL);
+            }
+            return CheckRemote(location, URL, fallbackURL);
         }
         /// <summary>
         /// Checks if an update is available.
@@ -174,12 +207,17 @@ namespace RussJudge.AutoApplicationUpdater
         /// <param name="URL">The remote URL to the UpdateManifest file.</param>
         /// <param name="fallbackURL">An optional URL to use for failover.</param>
         /// <returns>True if there is an update available.</returns>
-        public async Task<bool> CheckRemote(string AssemblyForVersionCheckLocation, string URL, string fallbackURL = "")
+        public Task<bool> CheckRemote(string AssemblyForVersionCheckLocation, string URL, string fallbackURL = "")
         {
-            LastRemoteResponse = await UpdateManifest.GetRemoteManifestFile(URL);
+            return CheckRemote(manifest => manifest.NeedsUpdated(AssemblyForVersionCheckLocation), URL, fallbackURL);
+        }
+
+        private async Task<bool> CheckRemote(Func<UpdateManifest, bool> needsUpdated, string URL, string fallbackURL)
+        {
+            LastRemoteResponse = await UpdateManifest.GetRemoteManifestFile(URL).ConfigureAwait(false);
             if ((LastRemoteResponse == null || !LastRemoteResponse.IsSuccess) && !string.IsNullOrEmpty(fallbackURL))
             {
-                LastRemoteResponse = await UpdateManifest.GetRemoteManifestFile(fallbackURL);
+                LastRemoteResponse = await UpdateManifest.GetRemoteManifestFile(fallbackURL).ConfigureAwait(false);
             }
             if (LastRemoteResponse != null && LastRemoteResponse.IsSuccess)
             {
@@ -189,7 +227,7 @@ namespace RussJudge.AutoApplicationUpdater
             if (RemoteManifestFile != null)
             {
                 IsRequired = RemoteManifestFile.IsRequired;
-                return RemoteManifestFile.NeedsUpdated(AssemblyForVersionCheckLocation);
+                return needsUpdated(RemoteManifestFile);
             }
             else
             {

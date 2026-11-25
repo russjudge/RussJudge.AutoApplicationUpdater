@@ -38,6 +38,30 @@
             Console.WriteLine($"{PrefixSuffix}{l1Final}{PrefixSuffix}");
 
         }
+        /// <summary>
+        /// Reads a project file so that it can be written back by <see cref="WriteProjectFile"/> without altering
+        /// anything other than what was deliberately changed.
+        /// </summary>
+        /// <param name="projectFile">The path to the project file.</param>
+        /// <param name="encoding">The encoding to write the project file back with.</param>
+        /// <returns>The content of the project file.</returns>
+        public static string ReadProjectFile(string projectFile, out System.Text.Encoding encoding)
+        {
+            //A file with a byte order mark is read (and written back) in the encoding it declares.  A file without one
+            //is read as Latin1, which maps every byte to exactly one character.  Only ASCII text is searched for and
+            //replaced, so whatever the file's real encoding is (UTF-8, or the ANSI code page that Setup projects are
+            //saved in), every other byte is written back untouched.
+            using StreamReader sr = new(projectFile, System.Text.Encoding.Latin1, true);
+            string retVal = sr.ReadToEnd();
+            encoding = sr.CurrentEncoding;
+            return retVal;
+        }
+
+        public static void WriteProjectFile(string projectFile, string projectData, System.Text.Encoding encoding)
+        {
+            File.WriteAllText(projectFile, projectData, encoding);
+        }
+
         public static void Process(string[] args)
         {
             string projectFile = string.Empty;

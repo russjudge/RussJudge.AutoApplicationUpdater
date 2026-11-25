@@ -27,7 +27,8 @@ Below is sample code to add to an application for self-update:
 private async Task CheckForUpdate()
 {
     //Hard-code the URL that contains the data for verison information and self-update.
-    string remoteUpdateMainfestURL = "https://github.com/russjudge/RussJudge.AutoApplicationUpdater/blob/master/SampleDeployment/Example.json";
+    //(When hosting on GitHub, this must be the "raw" URL--the regular "blob" URL returns a web page, not the UpdateManifest file.)
+    string remoteUpdateMainfestURL = "https://raw.githubusercontent.com/russjudge/RussJudge.AutoApplicationUpdater/refs/heads/master/SampleDeployment/Example.json";
     RussJudge.AutoApplicationUpdater.UpdateChecker checker = new();
     var assm = System.Reflection.Assembly.GetExecutingAssembly();
     if (await checker.CheckRemote(assm, remoteUpdateMainfestURL))

@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <FileVersion>2.0.0.20</FileVersion>
-    <AssemblyVersion>2.0.0.20</AssemblyVersion>
+    <FileVersion>2.1.0.22</FileVersion>
+    <AssemblyVersion>2.1.0.22</AssemblyVersion>
     <Authors>Russ Judge</Authors>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
   </PropertyGroup>

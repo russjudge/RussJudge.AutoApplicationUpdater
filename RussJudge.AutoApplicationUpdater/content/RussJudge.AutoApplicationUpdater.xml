@@ -9,6 +9,12 @@
             Holds data for the response for connecting to the remote server for update.
             </summary>
         </member>
+        <member name="P:RussJudge.AutoApplicationUpdater.RemoteResponse.PackageChecksumVerified">
+            <summary>
+            Set when the installer package has already been checked against the checksum in the Update Manifest,
+            so that the package does not need to be hashed a second time before it is installed.
+            </summary>
+        </member>
         <member name="P:RussJudge.AutoApplicationUpdater.RemoteResponse.InstallerPackageContent">
             <summary>
             The Install Package.  Save to a file and run to install the package.
@@ -45,6 +51,11 @@
             Class to check for and download and install an update to your application.
             </summary>
         </member>
+        <member name="P:RussJudge.AutoApplicationUpdater.UpdateChecker.RemoteManifestFile">
+            <summary>
+            Remote UpdateManifest file
+            </summary>
+        </member>
         <member name="P:RussJudge.AutoApplicationUpdater.UpdateChecker.IsRequired">
             <summary>
             Indicates whether or not the update is required.
@@ -62,12 +73,18 @@
             <param name="localInstallerPackagePath">The path to the installer package.</param>
             <returns>Null if successful, or the error message if not.</returns>
         </member>
-        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.UpdateFromRemote(System.String)">
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.UpdateFromRemote(System.String,System.String)">
             <summary>
             Downloads the remote installer package and executes it.
             </summary>
             <param name="remoteURLForPackage">The direct http url link to the installer package.</param>
+            <param name="fallbackURL">Fallback URL to use if the first one fails.</param>
             <returns>The error message if the process fails, or null if successful.</returns>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.GetPackageFileName(RussJudge.AutoApplicationUpdater.UpdateManifest,System.String)">
+            <summary>
+            Determines the name to save the downloaded installer package as.
+            </summary>
         </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.UpdateFromRemote">
             <summary>
@@ -75,20 +92,22 @@
             </summary>
             <returns>The error message if the process fails, or null if successful.</returns>
         </member>
-        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.CheckRemote(System.Reflection.Assembly,System.String)">
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.CheckRemote(System.Reflection.Assembly,System.String,System.String)">
             <summary>
             Checks if an update is available.
             </summary>
             <param name="AssemblyForVersionCheck">Generally the entry assembly, or whatever assembly is used for version-checking.</param>
             <param name="URL">The remote URL to the UpdateManifest file.</param>
+            <param name="fallbackURL">An optional URL to use for failover.</param>
             <returns>True if there is an update available.</returns>
         </member>
-        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.CheckRemote(System.String,System.String)">
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateChecker.CheckRemote(System.String,System.String,System.String)">
             <summary>
             Checks if an update is available.
             </summary>
             <param name="AssemblyForVersionCheckLocation">Generally the entry assembly, or whatever assembly is used for version-checking.</param>
             <param name="URL">The remote URL to the UpdateManifest file.</param>
+            <param name="fallbackURL">An optional URL to use for failover.</param>
             <returns>True if there is an update available.</returns>
         </member>
         <member name="T:RussJudge.AutoApplicationUpdater.UpdateManifest">
@@ -122,6 +141,7 @@
             <summary>
             List of supported compression types, in addition to zip.
             </summary>
+            <remarks>Keyed by file extension, including the leading period (for example ".gzip").</remarks>
         </member>
         <member name="P:RussJudge.AutoApplicationUpdater.UpdateManifest.LastError">
             <summary>
@@ -151,6 +171,20 @@
             This can be JSON data, or the path to a file with the JSON data, or it can be the path to the referenced AssemblyPath executable.</param>
             <param name="remoteURLSourcePackageInstaller">Required if the AssemblyPath executable is passed.
             Sets the URL to the application package installer.</param>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.IsFilePath(System.String)">
+            <summary>
+            Determines whether the value passed to the constructor is the path to a file rather than JSON data.
+            </summary>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.FromJson(System.String,System.String@)">
+            <summary>
+            Builds an UpdateManifest from JSON data.  Unlike the public constructor, the data is never treated as a file path,
+            which matters when the data came from a remote server.
+            </summary>
+            <param name="json">The JSON of an UpdateManifest object.</param>
+            <param name="error">The reason the JSON could not be read, or null if it was read successfully.</param>
+            <returns>The UpdateManifest, which is left empty if the JSON could not be read.</returns>
         </member>
         <member name="P:RussJudge.AutoApplicationUpdater.UpdateManifest.Executable">
             <summary>
@@ -214,6 +248,12 @@
             <param name="RemoteSourceManifestFileURL"></param>
             <returns>The response from the remote, including the manifest if successful, or any error messages if failed.</returns>
         </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.CreateFailedResponse(System.Exception)">
+            <summary>
+            Converts a failure to reach the remote into a response, so that a timeout or a dropped connection
+            is reported to the caller (and can fail over to a fallback URL) instead of being thrown.
+            </summary>
+        </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.GetManifestFile(System.String)">
             <summary>
             Downloads the update manifest from the remote URL.
@@ -227,6 +267,11 @@
             </summary>
             <param name="remotePackageURL">The URL to the remote installer package.</param>
             <returns>The response from the remote, including the installer package if successful, or any error messages if failed.</returns>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.ReadPackageContent(System.Net.Http.HttpContent)">
+            <summary>
+            Reads the body of a package download, giving up only if the remote stops sending data.
+            </summary>
         </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.GetRemotePackage">
             <summary>
@@ -282,12 +327,18 @@
             <param name="json">The valid JSON of UpdateManifest object.</param>
             <returns>The UpdateManifest of the JSON data.</returns>
         </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.VersionInfo.#ctor(System.Reflection.Assembly)">
+            <summary>
+            Reads the version directly from a loaded assembly, for when the assembly has no file to read it from.
+            </summary>
+            <param name="assembly">The assembly to get the version of.</param>
+        </member>
         <member name="M:RussJudge.AutoApplicationUpdater.VersionInfo.IsNewer(RussJudge.AutoApplicationUpdater.VersionInfo)">
             <summary>
-            Tests if the passed VersionInfo is a newer version than this VersionInfo.
+            Tests if this VersionInfo is a newer version than the passed VersionInfo.
             </summary>
             <param name="versionInfo">The VersionInfo to compare</param>
-            <returns>True if the passed VersionInfo is a newer version than this VersionInfo</returns>
+            <returns>True if this VersionInfo is a newer version than the passed VersionInfo</returns>
         </member>
     </members>
 </doc>

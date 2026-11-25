@@ -2,14 +2,24 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RussJudge.AutoApplicationUpdater
 {
     internal class VersionInfo
     {
+        /// <summary>
+        /// Reads the version directly from a loaded assembly, for when the assembly has no file to read it from.
+        /// </summary>
+        /// <param name="assembly">The assembly to get the version of.</param>
+        public VersionInfo(Assembly assembly)
+            : this(assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version
+                  ?? assembly.GetName().Version?.ToString()
+                  ?? string.Empty)
+        {
+        }
         public VersionInfo(string version)
         {
             Version = version;
@@ -76,10 +86,10 @@ namespace RussJudge.AutoApplicationUpdater
         public int Build { get; private set; }
 
         /// <summary>
-        /// Tests if the passed VersionInfo is a newer version than this VersionInfo.
+        /// Tests if this VersionInfo is a newer version than the passed VersionInfo.
         /// </summary>
         /// <param name="versionInfo">The VersionInfo to compare</param>
-        /// <returns>True if the passed VersionInfo is a newer version than this VersionInfo</returns>
+        /// <returns>True if this VersionInfo is a newer version than the passed VersionInfo</returns>
         public bool IsNewer(VersionInfo versionInfo)
         {
             return Major > versionInfo.Major

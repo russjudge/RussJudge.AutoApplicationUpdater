@@ -19,15 +19,21 @@ namespace RussJudge.AutoApplicationUpdater
             RequestMessage = requestMessage;
             IsSuccess = isSuccess;
         }
-        internal RemoteResponse(System.Net.HttpStatusCode statusCode, string? reasonPhrase, HttpRequestMessage? requestMessage, bool isSuccess, string updateManifestContent)
+        internal RemoteResponse(System.Net.HttpStatusCode statusCode, string? reasonPhrase, HttpRequestMessage? requestMessage, bool isSuccess, UpdateManifest updateManifest)
         {
             ResponseMessage = reasonPhrase;
             StatusCode = statusCode;
             RequestMessage = requestMessage;
             IsSuccess = isSuccess;
-            ManifestFile = new(updateManifestContent);
+            ManifestFile = updateManifest;
 
         }
+
+        /// <summary>
+        /// Set when the installer package has already been checked against the checksum in the Update Manifest,
+        /// so that the package does not need to be hashed a second time before it is installed.
+        /// </summary>
+        internal bool PackageChecksumVerified { get; init; }
 
         /// <summary>
         /// The Install Package.  Save to a file and run to install the package.

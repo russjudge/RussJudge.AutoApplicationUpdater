@@ -39,6 +39,12 @@ namespace ManifestBuilder
         }
         public static void BuildFile(string assemblyPath, string packageFilePath, string outputFile, string installerURL, bool isRequired = false)
         {
+            //Without the assembly the manifest would be written as version 0.0.0.0, which can never trigger an update.
+            assemblyPath = Path.GetFullPath(assemblyPath);
+            if (!File.Exists(assemblyPath))
+            {
+                throw new FileNotFoundException($"The assembly to get the version data from was not found: {assemblyPath}", assemblyPath);
+            }
             UpdateManifest manifest = new(assemblyPath)
             {
                 IsRequired = isRequired
@@ -90,8 +96,9 @@ namespace ManifestBuilder
                         int idx = line.IndexOf('=');
                         if (idx > -1)
                         {
-                            string parameter = line[1..idx];
-                            string value = line[(idx + 1)..];
+                            //Stray spaces around the name or value would otherwise make the parameter unrecognized or the path invalid.
+                            string parameter = line[1..idx].Trim();
+                            string value = line[(idx + 1)..].Trim();
                             switch (parameter.ToLowerInvariant())
                             {
                                 case assemblyParm:
@@ -226,8 +233,10 @@ namespace ManifestBuilder
         }
         private string GetTargetInstallerPath(string localPath)
         {
-            int TargetNameStart = InstallerURL.LastIndexOf('/');
-            string TargetName = InstallerURL[(TargetNameStart + 1)..];
+            //Only the path of the URL names the file--a query string is not part of the name, and escaped characters (%20) are not literal.
+            string urlPath = Uri.TryCreate(InstallerURL, UriKind.Absolute, out Uri? uri) ? Uri.UnescapeDataString(uri.AbsolutePath) : InstallerURL;
+            int TargetNameStart = urlPath.LastIndexOf('/');
+            string TargetName = urlPath[(TargetNameStart + 1)..];
             string retVal = Path.Combine(localPath, TargetName);
             return retVal;
         }
@@ -238,11 +247,22 @@ namespace ManifestBuilder
             if (ValidateParameters())
             {
                 FileInfo installer = new(PackageFilePath);
+                if (!installer.Exists)
+                {
+                    //Stop before anything is written: compressing a missing installer would leave an empty package behind.
+                    throw new FileNotFoundException($"The installer package was not found: {installer.FullName}", installer.FullName);
+                }
                 if (!string.IsNullOrEmpty(installer.DirectoryName))
                 {
                     string targetCompressedPackagePath = GetTargetInstallerPath(installer.DirectoryName);
+                    FileInfo targetCompressed = new(targetCompressedPackagePath);
 
-                    if (targetCompressedPackagePath.EndsWith(UpdateManifest.ZIPExtension, StringComparison.OrdinalIgnoreCase))
+                    if (targetCompressed.FullName.Equals(installer.FullName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        //The installer package is already the file that gets downloaded.  There is nothing to compress,
+                        //and compressing it onto itself would destroy the installer package.
+                    }
+                    else if (targetCompressedPackagePath.EndsWith(UpdateManifest.ZIPExtension, StringComparison.OrdinalIgnoreCase))
                     {
                         if (CreateZip(targetCompressedPackagePath, installer))
                         {
@@ -253,35 +273,34 @@ namespace ManifestBuilder
                             WriteLine("Update manifest package checksum will be based on the installer package file and not the compressed file.");
                         }
                     }
-                    else
+                    else if (UpdateManifest.CompressionTypes.TryGetValue(targetCompressed.Extension, out Type? type) && type != null)
                     {
-                        FileInfo targetCompressed = new(targetCompressedPackagePath);
-                        if (targetCompressed.Extension.StartsWith(installer.Extension, StringComparison.OrdinalIgnoreCase))
+                        //Decompressing strips the compression extension from the name, and what is left must still
+                        //carry the installer's extension for the installer to be runnable.
+                        string decompressedName = targetCompressed.Name[..^targetCompressed.Extension.Length];
+                        if (decompressedName.EndsWith(installer.Extension, StringComparison.OrdinalIgnoreCase))
                         {
-                            if (UpdateManifest.CompressionTypes.TryGetValue(targetCompressed.Extension.ToLowerInvariant(), out Type? type))
+                            if (CompressFile(type, PackageFilePath, targetCompressedPackagePath))
                             {
-                                if (type != null)
-                                {
-
-                                    if (CompressFile(type, PackageFilePath, targetCompressedPackagePath))
-                                    {
-                                        PackageFilePath = targetCompressedPackagePath;
-                                    }
-                                    else
-                                    {
-                                        WriteLine("Update manifest package checksum will be based on the installer package file and not the compressed file.");
-                                    }
-                                }
+                                PackageFilePath = targetCompressedPackagePath;
+                            }
+                            else
+                            {
+                                WriteLine("Update manifest package checksum will be based on the installer package file and not the compressed file.");
                             }
                         }
                         else
                         {
                             WriteLine($"Error: The target compressed package MUST include the package extension ({installer.Extension}) in the file name.");
-                            string expectedExtension = $"{installer.Extension}.{targetCompressed.Extension}";
-                            string compressedName = targetCompressed.Name[..^targetCompressed.Extension.Length];
-                            WriteLine($"---> \"{targetCompressed.Name}\" is not valid!  \"{compressedName}{expectedExtension}\" is expected.");
+                            string expectedExtension = $"{installer.Extension}{targetCompressed.Extension}";
+                            WriteLine($"---> \"{targetCompressed.Name}\" is not valid!  \"{decompressedName}{expectedExtension}\" is expected.");
                             WriteLine("Cannot proceed with compression.");
                         }
+                    }
+                    else if (!targetCompressed.Extension.Equals(installer.Extension, StringComparison.OrdinalIgnoreCase))
+                    {
+                        WriteLine($"Note: \"{targetCompressed.Name}\" does not end with a supported compression extension");
+                        WriteLine($"({UpdateManifest.ZIPExtension}, {string.Join(", ", UpdateManifest.CompressionTypes.Keys)}), so the installer package will not be compressed.");
                     }
                 }
                 BuildFile(AssemblyPath, PackageFilePath, OutPath, InstallerURL, IsRequired);
@@ -328,7 +347,7 @@ namespace ManifestBuilder
             {
                 try
                 {
-                    using FileStream originalFileStream = File.Open(OriginalFileName, FileMode.Open);
+                    using FileStream originalFileStream = File.OpenRead(OriginalFileName);
                     using FileStream compressedFileStream = File.Create(CompressedFileName);
                     using var compressor = (Stream)constructor.Invoke([compressedFileStream, CompressionLevel.Optimal]);
                     originalFileStream.CopyTo(compressor);

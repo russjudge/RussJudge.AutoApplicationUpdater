@@ -63,10 +63,14 @@ namespace RussJudge.AutoApplicationUpdater
         /// <summary>
         /// List of supported compression types, in addition to zip.
         /// </summary>
+        /// <remarks>Keyed by file extension, including the leading period (for example ".gzip").</remarks>
         public static Dictionary<string, Type> CompressionTypes { get; private set; } =
-                new([new("gzip", typeof(System.IO.Compression.GZipStream)),
-                    new("br", typeof(System.IO.Compression.BrotliStream)),
-                    new("zlib", typeof(System.IO.Compression.ZLibStream)) ]);
+                new(StringComparer.OrdinalIgnoreCase)
+                {
+                    [".gzip"] = typeof(System.IO.Compression.GZipStream),
+                    [".br"] = typeof(System.IO.Compression.BrotliStream),
+                    [".zlib"] = typeof(System.IO.Compression.ZLibStream)
+                };
 
         /// <summary>
         /// Provides the last error message that occurred, if any.
@@ -96,12 +100,11 @@ namespace RussJudge.AutoApplicationUpdater
 
                     if (CompressionTypes.TryGetValue(compressedExt, out Type? compressorType) && compressorType != null)
                     {
-                        using FileStream compressedFileStream = File.Open(compressedFile, FileMode.Open);
-                        using FileStream outputFileStream = File.Create(retVal);
-
                         ConstructorInfo? constructor = compressorType.GetConstructor([typeof(Stream), typeof(CompressionMode)]);
                         if (constructor != null)
                         {
+                            using FileStream compressedFileStream = File.OpenRead(compressedFile);
+                            using FileStream outputFileStream = File.Create(retVal);
                             using var decompressor = (Stream)constructor.Invoke([compressedFileStream, CompressionMode.Decompress]);
                             decompressor.CopyTo(outputFileStream);
                         }
@@ -138,11 +141,18 @@ namespace RussJudge.AutoApplicationUpdater
             {
                 using (ZipArchive archive = ZipFile.OpenRead(packagedZip))
                 {
+                    string tempPath = Path.GetTempPath();
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
-                        retVal = Path.Combine(Path.GetTempPath(), entry.Name);
+                        if (string.IsNullOrEmpty(entry.Name))
+                        {
+                            //Folder entry--there is nothing to extract.
+                            continue;
+                        }
+                        string extractedFile = Path.Combine(tempPath, entry.Name);
 
-                        entry.ExtractToFile(retVal, true);
+                        entry.ExtractToFile(extractedFile, true);
+                        retVal = extractedFile;
                     }
                 }
                 if (retVal == null)
@@ -153,12 +163,21 @@ namespace RussJudge.AutoApplicationUpdater
             catch (Exception ex)
             {
                 LastError = ex.Message;
+                retVal = null;
             }
             return retVal;
         }
 
 
         private static readonly HttpClient httpClient = new();
+
+        private static readonly JsonSerializerOptions jsonOptions = new()
+        {
+            IgnoreReadOnlyProperties = true,
+            IgnoreReadOnlyFields = true,
+            WriteIndented = true,
+            IncludeFields = false
+        };
 
         private void LoadManifestData(UpdateManifest? manifest)
         {
@@ -186,8 +205,7 @@ namespace RussJudge.AutoApplicationUpdater
         public UpdateManifest(string jsonOrUpdateManifestFileOrAssemblyPathExecutable, string? remoteURLSourcePackageInstaller = null)
         {
 
-            if (jsonOrUpdateManifestFileOrAssemblyPathExecutable.Substring(1, 2).Equals(@":\")
-                && !jsonOrUpdateManifestFileOrAssemblyPathExecutable.Contains('\n'))
+            if (IsFilePath(jsonOrUpdateManifestFileOrAssemblyPathExecutable))
             {
                 FileInfo f = new(jsonOrUpdateManifestFileOrAssemblyPathExecutable);
                 if (f.Name.EndsWith(DLLExtension, StringComparison.OrdinalIgnoreCase)
@@ -220,6 +238,35 @@ namespace RussJudge.AutoApplicationUpdater
                 LoadManifestData(Deserialize(jsonOrUpdateManifestFileOrAssemblyPathExecutable));
 
             }
+        }
+
+        /// <summary>
+        /// Determines whether the value passed to the constructor is the path to a file rather than JSON data.
+        /// </summary>
+        private static bool IsFilePath(string value)
+        {
+            ReadOnlySpan<char> trimmed = value.AsSpan().TrimStart();
+            if (trimmed.IsEmpty || trimmed[0] == '{' || value.AsSpan().IndexOfAny('\r', '\n') >= 0)
+            {
+                //The JSON of an UpdateManifest always starts with a brace, and a path never spans lines.
+                return false;
+            }
+            //Fully qualified covers drive paths (C:\) and network shares (\\server\share); anything else must exist to count as a path.
+            return Path.IsPathFullyQualified(value) || File.Exists(value);
+        }
+
+        /// <summary>
+        /// Builds an UpdateManifest from JSON data.  Unlike the public constructor, the data is never treated as a file path,
+        /// which matters when the data came from a remote server.
+        /// </summary>
+        /// <param name="json">The JSON of an UpdateManifest object.</param>
+        /// <param name="error">The reason the JSON could not be read, or null if it was read successfully.</param>
+        /// <returns>The UpdateManifest, which is left empty if the JSON could not be read.</returns>
+        internal static UpdateManifest FromJson(string json, out string? error)
+        {
+            UpdateManifest retVal = new();
+            retVal.LoadManifestData(Deserialize(json, out error));
+            return retVal;
         }
         /// <summary>
         /// The assembly location for version checking.
@@ -362,26 +409,30 @@ namespace RussJudge.AutoApplicationUpdater
             RemoteResponse retVal;
             try
             {
-                string responseBody = await httpClient.GetStringAsync(RemoteSourceManifestFileURL);
-                retVal = new(HttpStatusCode.OK, null, null, true, responseBody);
-                if (retVal.ManifestFile != null)
-                {
-                    if (!string.IsNullOrEmpty(LastError))
-                    {
-                        retVal.IsSuccess = false;
-                    }
-                }
+                string responseBody = await httpClient.GetStringAsync(RemoteSourceManifestFileURL).ConfigureAwait(false);
+                UpdateManifest manifest = FromJson(responseBody, out string? error);
+                retVal = new(HttpStatusCode.OK, error, null, error == null, manifest);
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                HttpStatusCode code = HttpStatusCode.BadRequest;
-                if (ex.StatusCode != null)
-                {
-                    code = ex.StatusCode.Value;
-                }
-                retVal = new(code, ex.Message, null, false);
+                retVal = CreateFailedResponse(ex);
             }
             return retVal;
+        }
+
+        /// <summary>
+        /// Converts a failure to reach the remote into a response, so that a timeout or a dropped connection
+        /// is reported to the caller (and can fail over to a fallback URL) instead of being thrown.
+        /// </summary>
+        private static RemoteResponse CreateFailedResponse(Exception ex)
+        {
+            HttpStatusCode code = ex switch
+            {
+                HttpRequestException { StatusCode: HttpStatusCode statusCode } => statusCode,
+                OperationCanceledException or TimeoutException => HttpStatusCode.RequestTimeout,
+                _ => HttpStatusCode.BadRequest
+            };
+            return new(code, ex.Message, null, false);
         }
 
         /// <summary>
@@ -392,8 +443,7 @@ namespace RussJudge.AutoApplicationUpdater
 
         public static UpdateManifest GetManifestFile(string UpdateManifestFilePath)
         {
-            using StreamReader sr = new(UpdateManifestFilePath);
-            return new(sr.ReadToEnd());
+            return FromJson(File.ReadAllText(UpdateManifestFilePath), out _);
         }
         /// <summary>
         /// Downloads the installer package from the remote URL.
@@ -405,22 +455,20 @@ namespace RussJudge.AutoApplicationUpdater
             RemoteResponse retVal;
             try
             {
-                using var result = await httpClient.GetAsync(remotePackageURL);
+                //Only the headers are awaited here.  Otherwise HttpClient.Timeout covers the entire download, and any
+                //package that takes longer than that to arrive can never be downloaded.
+                using var result = await httpClient.GetAsync(remotePackageURL, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                 if (result.IsSuccessStatusCode)
                 {
-                    var content = await result.Content.ReadAsByteArrayAsync();
-                    string remoteChecksum = GetFileChecksum(content);
-                    if (string.IsNullOrEmpty(FilePackageChecksum) || remoteChecksum.Equals(FilePackageChecksum))
+                    var content = await ReadPackageContent(result.Content).ConfigureAwait(false);
+                    bool checksumExpected = !string.IsNullOrEmpty(FilePackageChecksum);
+                    string remoteChecksum = checksumExpected ? GetFileChecksum(content) : string.Empty;
+                    if (!checksumExpected || ChecksumMatches(remoteChecksum))
                     {
-                        string file = remotePackageURL;
-                        int i = remotePackageURL.LastIndexOf('/');
-                        if (i > 0)
+                        retVal = new(result.StatusCode, result.ReasonPhrase, result.RequestMessage, result.IsSuccessStatusCode, content)
                         {
-                            file = remotePackageURL[(i + 1)..];
-                        }
-
-                        retVal = new(result.StatusCode, result.ReasonPhrase, result.RequestMessage, result.IsSuccessStatusCode, content);
-
+                            PackageChecksumVerified = checksumExpected
+                        };
                     }
                     else
                     {
@@ -433,16 +481,59 @@ namespace RussJudge.AutoApplicationUpdater
                     retVal = new(result.StatusCode, result.ReasonPhrase, result.RequestMessage, result.IsSuccessStatusCode);
                 }
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                HttpStatusCode code = HttpStatusCode.BadRequest;
-                if (ex.StatusCode != null)
-                {
-                    code = ex.StatusCode.Value;
-                }
-                retVal = new(code, ex.Message, null, false);
+                retVal = CreateFailedResponse(ex);
             }
             return retVal;
+        }
+
+        /// <summary>
+        /// Reads the body of a package download, giving up only if the remote stops sending data.
+        /// </summary>
+        private static async Task<byte[]> ReadPackageContent(HttpContent content)
+        {
+            //When the remote reports the size, the buffer is created at that size so that it can be returned as-is, without a second copy.
+            long? contentLength = content.Headers.ContentLength;
+            int capacity = contentLength is > 0 && contentLength <= Array.MaxLength ? (int)contentLength.Value : 0;
+
+            //The time allowed for the remote to respond is also the longest the download may go without receiving any
+            //data.  The download can take as long as it needs, so long as it keeps making progress.
+            TimeSpan maximumIdleTime = httpClient.Timeout;
+
+            using MemoryStream package = new(capacity);
+            using Stream source = await content.ReadAsStreamAsync().ConfigureAwait(false);
+            using CancellationTokenSource idleTimeout = new();
+            byte[] buffer = new byte[81920];
+            try
+            {
+                while (true)
+                {
+                    idleTimeout.CancelAfter(maximumIdleTime);
+                    int bytesRead = await source.ReadAsync(buffer.AsMemory(), idleTimeout.Token).ConfigureAwait(false);
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+                    package.Write(buffer, 0, bytesRead);
+                }
+            }
+            catch (OperationCanceledException) when (idleTimeout.IsCancellationRequested)
+            {
+                throw new TimeoutException($"The download stalled--no data was received for {maximumIdleTime.TotalSeconds:0} seconds.");
+            }
+
+            if (package.TryGetBuffer(out ArraySegment<byte> data) && data.Array != null && data.Offset == 0 && data.Count == data.Array.Length)
+            {
+                return data.Array;
+            }
+            return package.ToArray();
+        }
+
+        private bool ChecksumMatches(string checksum)
+        {
+            //A checksum is hexadecimal, so its casing does not matter (many tools report it in upper case).
+            return checksum.Equals(FilePackageChecksum, StringComparison.OrdinalIgnoreCase);
         }
         /// <summary>
         /// Downloads the remote installer package.
@@ -450,7 +541,7 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>The response from the remote, including the installer packkage if successful, or any error messages if failed.</returns>
         public async Task<RemoteResponse?> GetRemotePackage()
         {
-            return await GetRemotePackage(RemoteURLSourcePackage);
+            return await GetRemotePackage(RemoteURLSourcePackage).ConfigureAwait(false);
         }
 
 
@@ -462,13 +553,12 @@ namespace RussJudge.AutoApplicationUpdater
         public bool NeedsUpdated(string assemblyPath)
         {
 
-            bool retVal = false;
-            var localVersion = GetVersionData(assemblyPath);
-            if (_versionInfo != null)
-            {
-                retVal = _versionInfo.IsNewer(localVersion);
-            }
-            return retVal;
+            return NeedsUpdated(GetVersionData(assemblyPath));
+        }
+
+        internal bool NeedsUpdated(VersionInfo localVersion)
+        {
+            return _versionInfo != null && _versionInfo.IsNewer(localVersion);
         }
 
         /// <summary>
@@ -478,7 +568,7 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>True if the checksum is valid.</returns>
         public bool PackageIsValid(string path)
         {
-            return GetFileChecksum(path).Equals(FilePackageChecksum);
+            return ChecksumMatches(GetFileChecksum(path));
         }
 
 
@@ -489,7 +579,7 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>True if the checksum is valid.</returns>
         public bool PackageIsValid(byte[] package)
         {
-            return GetFileChecksum(package).Equals(FilePackageChecksum);
+            return ChecksumMatches(GetFileChecksum(package));
         }
 
 
@@ -536,13 +626,8 @@ namespace RussJudge.AutoApplicationUpdater
         }
         private static JsonSerializerOptions GetJsonOptions()
         {
-            return new()
-            {
-                IgnoreReadOnlyProperties = true,
-                IgnoreReadOnlyFields = true,
-                WriteIndented = true,
-                IncludeFields = false
-            };
+            //The options instance holds the serializer's metadata cache, so it must be reused rather than rebuilt for every call.
+            return jsonOptions;
         }
         /// <summary>
         /// Converts valid JSON into an UpdateManifest object.
@@ -551,14 +636,19 @@ namespace RussJudge.AutoApplicationUpdater
         /// <returns>The UpdateManifest of the JSON data.</returns>
         public static UpdateManifest? Deserialize(string json)
         {
+            return Deserialize(json, out _);
+        }
+
+        private static UpdateManifest? Deserialize(string json, out string? error)
+        {
             try
             {
-                LastError = null;
+                LastError = error = null;
                 return JsonSerializer.Deserialize<UpdateManifest>(json, GetJsonOptions());
             }
             catch (Exception ex)
             {
-                LastError = ex.Message;
+                LastError = error = ex.Message;
                 return null;
             }
         }
