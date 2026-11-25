@@ -63,14 +63,45 @@ namespace RussJudge.AutoApplicationUpdater
         /// <summary>
         /// List of supported compression types, in addition to zip.
         /// </summary>
-        /// <remarks>Keyed by file extension, including the leading period (for example ".gzip").</remarks>
+        /// <remarks>Keyed by file extension, including the leading period (for example ".gzip").
+        /// Which types are listed depends on the version of .NET the application is built for: ".br" requires
+        /// .NET Core 3.0 or later (it is not available to .NET Framework), and ".zlib" requires .NET 6 or later.</remarks>
         public static Dictionary<string, Type> CompressionTypes { get; private set; } =
                 new(StringComparer.OrdinalIgnoreCase)
                 {
                     [".gzip"] = typeof(System.IO.Compression.GZipStream),
+#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
                     [".br"] = typeof(System.IO.Compression.BrotliStream),
+#endif
+#if NET6_0_OR_GREATER
                     [".zlib"] = typeof(System.IO.Compression.ZLibStream)
+#endif
                 };
+
+        /// <summary>
+        /// The compression types that newer versions of .NET are able to decompress, but that the version of .NET
+        /// this assembly is built for is not.
+        /// </summary>
+        private static readonly string[] unavailableCompressionTypes =
+            [
+#if !NETCOREAPP && !NETSTANDARD2_1_OR_GREATER
+                ".br",
+#endif
+#if !NET6_0_OR_GREATER
+                ".zlib",
+#endif
+            ];
+
+        /// <summary>
+        /// Determines whether a file is compressed in a way that this version of .NET is unable to decompress.
+        /// </summary>
+        /// <param name="extension">The file extension, including the leading period.</param>
+        internal static bool IsUnavailableCompressionType(string extension)
+        {
+            //A type that the application added to CompressionTypes itself is available, whatever the version of .NET.
+            return !CompressionTypes.ContainsKey(extension)
+                && Array.Exists(unavailableCompressionTypes, type => type.Equals(extension, StringComparison.OrdinalIgnoreCase));
+        }
 
         /// <summary>
         /// Provides the last error message that occurred, if any.
@@ -94,8 +125,9 @@ namespace RussJudge.AutoApplicationUpdater
             {
                 try
                 {
-                    retVal = compressedFile[..pos];
-                    string compressedExt = compressedFile[retVal.Length..];
+                    //Substring is used rather than a range (compressedFile[..pos]), because .NET Framework and .NET Standard 2.0 do not support ranges.
+                    retVal = compressedFile.Substring(0, pos);
+                    string compressedExt = compressedFile.Substring(pos);
 
 
                     if (CompressionTypes.TryGetValue(compressedExt, out Type? compressorType) && compressorType != null)
@@ -117,7 +149,9 @@ namespace RussJudge.AutoApplicationUpdater
                     else
                     {
                         retVal = null;
-                        LastError = "Compressed file extension not recognized.  Only .zip, .gzip, .zlib, and .br are supported.";
+                        LastError = IsUnavailableCompressionType(compressedExt)
+                            ? $"{compressedExt} files cannot be decompressed by the version of .NET that this application is built for."
+                            : $"Compressed file extension not recognized.  Only {ZIPExtension}, {string.Join(", ", CompressionTypes.Keys)} are supported.";
                     }
                 }
                 catch (Exception ex)
@@ -252,8 +286,43 @@ namespace RussJudge.AutoApplicationUpdater
                 return false;
             }
             //Fully qualified covers drive paths (C:\) and network shares (\\server\share); anything else must exist to count as a path.
-            return Path.IsPathFullyQualified(value) || File.Exists(value);
+            return IsPathFullyQualified(value) || File.Exists(value);
         }
+
+        private static bool IsPathFullyQualified(string path)
+        {
+#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
+            return Path.IsPathFullyQualified(path);
+#else
+            //Path.IsPathFullyQualified does not exist in this version of .NET, so this makes the same decision that it does.
+            if (Path.DirectorySeparatorChar != '\\')
+            {
+                //Not Windows: a path is fully qualified when it starts at the root.
+                return path.Length > 0 && path[0] == Path.DirectorySeparatorChar;
+            }
+            if (path.Length < 2)
+            {
+                return false;
+            }
+            if (IsDirectorySeparator(path[0]))
+            {
+                //A network share (\\server\share) or a device path (\\?\C:\).  A single separator (\folder) is relative to the current drive.
+                return path[1] == '?' || IsDirectorySeparator(path[1]);
+            }
+            //Otherwise only a drive followed by a separator (C:\) is fully qualified.  "C:folder" is relative to the current folder of that drive.
+            return path.Length >= 3
+                && path[1] == Path.VolumeSeparatorChar
+                && IsDirectorySeparator(path[2])
+                && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z'));
+#endif
+        }
+
+#if !NETCOREAPP && !NETSTANDARD2_1_OR_GREATER
+        private static bool IsDirectorySeparator(char value)
+        {
+            return value == Path.DirectorySeparatorChar || value == Path.AltDirectorySeparatorChar;
+        }
+#endif
 
         /// <summary>
         /// Builds an UpdateManifest from JSON data.  Unlike the public constructor, the data is never treated as a file path,
@@ -409,7 +478,19 @@ namespace RussJudge.AutoApplicationUpdater
             RemoteResponse retVal;
             try
             {
+#if NET6_0_OR_GREATER
                 string responseBody = await httpClient.GetStringAsync(RemoteSourceManifestFileURL).ConfigureAwait(false);
+#else
+                //GetStringAsync is not used before .NET 6, for two reasons.  Before .NET 5, the exception that it
+                //throws when the remote reports a failure does not say what the status code was.  And in .NET 5, it
+                //does not time out when the remote stops sending part of the way through the manifest.
+                using HttpResponseMessage response = await httpClient.GetAsync(RemoteSourceManifestFileURL).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new(response.StatusCode, $"Response status code does not indicate success: {(int)response.StatusCode} ({response.ReasonPhrase}).", null, false);
+                }
+                string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
                 UpdateManifest manifest = FromJson(responseBody, out string? error);
                 retVal = new(HttpStatusCode.OK, error, null, error == null, manifest);
             }
@@ -428,7 +509,9 @@ namespace RussJudge.AutoApplicationUpdater
         {
             HttpStatusCode code = ex switch
             {
+#if NET5_0_OR_GREATER
                 HttpRequestException { StatusCode: HttpStatusCode statusCode } => statusCode,
+#endif
                 OperationCanceledException or TimeoutException => HttpStatusCode.RequestTimeout,
                 _ => HttpStatusCode.BadRequest
             };
@@ -495,7 +578,12 @@ namespace RussJudge.AutoApplicationUpdater
         {
             //When the remote reports the size, the buffer is created at that size so that it can be returned as-is, without a second copy.
             long? contentLength = content.Headers.ContentLength;
-            int capacity = contentLength is > 0 && contentLength <= Array.MaxLength ? (int)contentLength.Value : 0;
+#if NET6_0_OR_GREATER
+            int maximumLength = Array.MaxLength;
+#else
+            const int maximumLength = 0x7FFFFFC7;   //The value of Array.MaxLength, which does not exist in this version of .NET.
+#endif
+            int capacity = contentLength is > 0 && contentLength <= maximumLength ? (int)contentLength.Value : 0;
 
             //The time allowed for the remote to respond is also the longest the download may go without receiving any
             //data.  The download can take as long as it needs, so long as it keeps making progress.
@@ -505,12 +593,30 @@ namespace RussJudge.AutoApplicationUpdater
             using Stream source = await content.ReadAsStreamAsync().ConfigureAwait(false);
             using CancellationTokenSource idleTimeout = new();
             byte[] buffer = new byte[81920];
+#if !NETCOREAPP
+            //This only completes when the time that the remote is allowed to go without sending data has run out.
+            Task stalled = Task.Delay(Timeout.Infinite, idleTimeout.Token);
+#endif
             try
             {
                 while (true)
                 {
                     idleTimeout.CancelAfter(maximumIdleTime);
+#if NETCOREAPP
                     int bytesRead = await source.ReadAsync(buffer.AsMemory(), idleTimeout.Token).ConfigureAwait(false);
+#else
+                    //Outside of .NET Core and the versions of .NET that followed it (in .NET Framework, for one), a
+                    //read that is already waiting for data does not notice that it has been cancelled, and would wait
+                    //for as long as the remote keeps the connection open.  So the read is abandoned instead: nothing
+                    //waits for it any longer, and it ends on its own when the response is closed.
+                    Task<int> read = source.ReadAsync(buffer, 0, buffer.Length, idleTimeout.Token);
+                    if (await Task.WhenAny(read, stalled).ConfigureAwait(false) != read)
+                    {
+                        _ = read.ContinueWith(abandoned => abandoned.Exception, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+                        throw new OperationCanceledException(idleTimeout.Token);
+                    }
+                    int bytesRead = await read.ConfigureAwait(false);
+#endif
                     if (bytesRead == 0)
                     {
                         break;
@@ -604,7 +710,12 @@ namespace RussJudge.AutoApplicationUpdater
         public static string GetFileChecksum(string filePath)
         {
             using var stream = File.OpenRead(filePath);
+#if NET9_0_OR_GREATER
             return System.Convert.ToHexStringLower(MD5.HashData(stream)); //).Replace("-", string.Empty).ToLowerInvariant();
+#else
+            using MD5 md5 = MD5.Create();
+            return ToHexStringLower(md5.ComputeHash(stream));
+#endif
         }
         /// <summary>
         /// Gets the MD5 hash checksum for the provided file.
@@ -614,8 +725,23 @@ namespace RussJudge.AutoApplicationUpdater
         public static string GetFileChecksum(byte[] bytes)
         {
             //return BitConverter.ToString(MD5.HashData(bytes)).Replace("-", string.Empty).ToLowerInvariant();
+#if NET9_0_OR_GREATER
             return System.Convert.ToHexStringLower(MD5.HashData(bytes));
+#else
+            using MD5 md5 = MD5.Create();
+            return ToHexStringLower(md5.ComputeHash(bytes));
+#endif
         }
+
+#if !NET9_0_OR_GREATER
+        /// <summary>
+        /// Does what Convert.ToHexStringLower does, for the versions of .NET that came before it was added (.NET 9).
+        /// </summary>
+        private static string ToHexStringLower(byte[] bytes)
+        {
+            return BitConverter.ToString(bytes).Replace("-", string.Empty).ToLowerInvariant();
+        }
+#endif
         /// <summary>
         /// Serializes the UpdateManifest into JSON data.
         /// </summary>

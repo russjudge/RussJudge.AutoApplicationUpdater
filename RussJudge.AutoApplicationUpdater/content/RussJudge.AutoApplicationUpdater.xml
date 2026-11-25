@@ -141,7 +141,21 @@
             <summary>
             List of supported compression types, in addition to zip.
             </summary>
-            <remarks>Keyed by file extension, including the leading period (for example ".gzip").</remarks>
+            <remarks>Keyed by file extension, including the leading period (for example ".gzip").
+            Which types are listed depends on the version of .NET the application is built for: ".br" requires
+            .NET Core 3.0 or later (it is not available to .NET Framework), and ".zlib" requires .NET 6 or later.</remarks>
+        </member>
+        <member name="F:RussJudge.AutoApplicationUpdater.UpdateManifest.unavailableCompressionTypes">
+            <summary>
+            The compression types that newer versions of .NET are able to decompress, but that the version of .NET
+            this assembly is built for is not.
+            </summary>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.IsUnavailableCompressionType(System.String)">
+            <summary>
+            Determines whether a file is compressed in a way that this version of .NET is unable to decompress.
+            </summary>
+            <param name="extension">The file extension, including the leading period.</param>
         </member>
         <member name="P:RussJudge.AutoApplicationUpdater.UpdateManifest.LastError">
             <summary>
@@ -313,6 +327,11 @@
             </summary>
             <param name="bytes">The full binary data of the file.</param>
             <returns>The string representation of the MD5 checksum of the file.</returns>
+        </member>
+        <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.ToHexStringLower(System.Byte[])">
+            <summary>
+            Does what Convert.ToHexStringLower does, for the versions of .NET that came before it was added (.NET 9).
+            </summary>
         </member>
         <member name="M:RussJudge.AutoApplicationUpdater.UpdateManifest.Serialize">
             <summary>

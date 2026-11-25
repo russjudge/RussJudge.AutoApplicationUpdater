@@ -1,7 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
+    <!-- Every version of .NET from 5 on has its own build.  Everything older is reached through these three:
+           netstandard2.1 = .NET Core 3.0 and 3.1, plus the Mono, Xamarin, and Unity versions of that time
+           netstandard2.0 = .NET Core 2.0 through 2.2, UWP, and older Mono, Xamarin, and Unity versions
+           net462         = .NET Framework 4.6.2 through 4.8.1
+         The newest framework is listed first, because the first one is what Visual Studio shows the code as. -->
+    <TargetFrameworks>net11.0;net10.0;net9.0;net8.0;net7.0;net6.0;net5.0;netstandard2.1;netstandard2.0;net462</TargetFrameworks>
+    <!-- Without this, each framework is compiled as the version of C# it was released with. -->
+    <LangVersion>latest</LangVersion>
+    <!-- Building for frameworks that Microsoft no longer supports is the point, so it is not worth a warning. -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
@@ -11,21 +20,27 @@
     <Copyright>Copyright (c) 2024, 2026 $(Authors)</Copyright>
     <PackageIcon>rjicon2.png</PackageIcon>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <FileVersion>1.1.0.4</FileVersion>
-    <AssemblyVersion>1.1.0.4</AssemblyVersion>
+    <FileVersion>1.1.0.7</FileVersion>
+    <AssemblyVersion>1.1.0.7</AssemblyVersion>
     <Title>RussJudge.AutoApplicationUpdater</Title>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/russjudge/RussJudge.AutoApplicationUpdater</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>This provides a simplified mechanism for providing self-update check and install of any application that uses a Microsoft Setup Installer (.msi).</Description>
     <PackageProjectUrl>https://russjudge.com</PackageProjectUrl>
-    <PackageReleaseNotes>Ran through Claude Code to find bugs and performance improvements, and upgraded to .NET 11</PackageReleaseNotes>
+    <PackageReleaseNotes>Ran through Claude Code to find bugs and performance improvements, and upgraded to .NET 11.  Now also supports .NET 5 through .NET 10, .NET Core 2.0 through 3.1 (by way of .NET Standard 2.0 and 2.1), and .NET Framework 4.6.2 and later.</PackageReleaseNotes>
     <PackageTags>Update; automatic update; self update; updater</PackageTags>
     <!-- NU5100 warns that an assembly outside of the package's lib folder will not be added as a reference.  That is
          intended here: ManifestBuilder and VersionBump are packaged in the content folder as tools to be run, not
          as assemblies to be referenced. -->
     <NoWarn>$(NoWarn);NU5100</NoWarn>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
+  </PropertyGroup>
+
+  <!-- .NET Framework and .NET Standard 2.0 do not say which of their own methods can accept or return null, so the
+       compiler warns about nulls that cannot happen.  The null checking is done by the builds for the newer frameworks. -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net462'">
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -63,11 +78,32 @@
     <Content Include="content\VersionBump.runtimeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="rjicon.ico" />
+    <!-- The icon is not something for the projects that use this package to receive. -->
+    <Content Include="rjicon.ico" Pack="false" />
+    <!-- ManifestBuilder and VersionBump are the same whatever framework the project using this package is built for,
+         so they are packaged once ("any") instead of once for every target framework. -->
+    <Content Update="content\*" PackagePath="contentFiles\any\any\content;content\content" />
+  </ItemGroup>
+
+  <!-- System.Text.Json is part of .NET itself from .NET 5 on.  The older frameworks get it from NuGet. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1' Or '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net462'">
+    <PackageReference Include="System.Text.Json" Version="10.0.15" />
+  </ItemGroup>
+
+  <!-- These are part of .NET Framework, but are not referenced unless asked for.  For the same reason, .NET Framework
+       is the one framework that is not given "using System.Net.Http" by ImplicitUsings. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.Http" />
+    <Using Include="System.Net.Http" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="rjicon2.png">
+    <!-- This has to be "Include" rather than "Update".  With more than one target framework, the package is put
+         together by a pass over this project that does not pick up the files in the folder automatically, which
+         leaves "Update" with nothing to update and the package without its icon. -->
+    <None Remove="rjicon2.png" />
+    <None Include="rjicon2.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
@@ -80,8 +116,13 @@
     </None>
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(ProjectDir)content\VersionBump.exe $(ProjectFileName)" />
+  <!-- This runs once, after every target framework has been built.  A regular post-build event runs once for each
+       target framework, which would bump the version ten times a build, and would rewrite this file while the
+       builds for the other frameworks are still reading the version from it.
+       (ProjectDir and ProjectFileName are only defined while a single framework is being built, which is why the
+       MSBuild properties are used here in their place.) -->
+  <Target Name="BumpVersion" AfterTargets="Build" Condition="'$(IsCrossTargetingBuild)' == 'true'">
+    <Exec Command="&quot;$(MSBuildProjectDirectory)\content\VersionBump.exe&quot; &quot;$(MSBuildProjectFile)&quot;" />
   </Target>
 
 </Project>

@@ -2,11 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net11.0</TargetFramework>
+    <!-- This is a tool that is run on the developer's machine, whatever version of .NET that developer's own project
+         is built for.  It is built for .NET 6 (the same as ManifestBuilder) and rolls forward, so that it runs on
+         any machine that has .NET 6 or anything newer installed. -->
+    <TargetFramework>net6.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <LangVersion>latest</LangVersion>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <FileVersion>2.1.0.22</FileVersion>
-    <AssemblyVersion>2.1.0.22</AssemblyVersion>
+    <FileVersion>2.1.0.24</FileVersion>
+    <AssemblyVersion>2.1.0.24</AssemblyVersion>
     <Authors>Russ Judge</Authors>
     <ApplicationIcon>rjicon.ico</ApplicationIcon>
   </PropertyGroup>

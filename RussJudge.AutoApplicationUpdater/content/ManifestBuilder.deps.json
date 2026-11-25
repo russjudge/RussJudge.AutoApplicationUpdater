@@ -1,24 +1,24 @@
 {
   "runtimeTarget": {
-    "name": ".NETCoreApp,Version=v11.0",
+    "name": ".NETCoreApp,Version=v6.0",
     "signature": ""
   },
   "compilationOptions": {},
   "targets": {
-    ".NETCoreApp,Version=v11.0": {
+    ".NETCoreApp,Version=v6.0": {
       "ManifestBuilder/1.0.0": {
         "dependencies": {
-          "RussJudge.AutoApplicationUpdater": "1.1.0"
+          "RussJudge.AutoApplicationUpdater": "1.1.1"
         },
         "runtime": {
           "ManifestBuilder.dll": {}
         }
       },
-      "RussJudge.AutoApplicationUpdater/1.1.0": {
+      "RussJudge.AutoApplicationUpdater/1.1.1": {
         "runtime": {
           "RussJudge.AutoApplicationUpdater.dll": {
-            "assemblyVersion": "1.1.0.1",
-            "fileVersion": "1.1.0.1"
+            "assemblyVersion": "1.1.0.5",
+            "fileVersion": "1.1.0.5"
           }
         }
       }
@@ -30,7 +30,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "RussJudge.AutoApplicationUpdater/1.1.0": {
+    "RussJudge.AutoApplicationUpdater/1.1.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

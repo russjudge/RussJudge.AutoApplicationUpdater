@@ -11,6 +11,36 @@ For an example how to use this, see the example project at https://github.com/ru
 in the main project.  The example project also demonstrates an example of how to even automatically deploy updates using Github, though this method should
 not be used in large team projects.
 
+## Supported versions of .NET
+
+The package contains a build of the library for each of the following.  NuGet automatically uses the one that matches
+the version of .NET that your project is built for:
+
+| Your project is built for | Build that is used |
+| --- | --- |
+| .NET 5, 6, 7, 8, 9, 10, or 11 | The build for that version (net5.0 through net11.0) |
+| .NET Core 3.0 or 3.1 | netstandard2.1 |
+| .NET Core 2.0, 2.1, or 2.2 | netstandard2.0 |
+| .NET Framework 4.6.2 through 4.8.1 | net462 |
+
+The two .NET Standard builds also make the package available to the other platforms that support .NET Standard (such as Mono,
+Xamarin, UWP, and Unity).
+
+System.Text.Json is part of .NET 5 and later.  For everything older (.NET Framework, .NET Core 2.x and 3.x, and the other
+.NET Standard platforms), installing this package also installs the System.Text.Json NuGet package.
+
+The older versions of .NET cannot decompress every type of compressed installer package:
+
+| Installer package | Can be installed by an application built for |
+| --- | --- |
+| Not compressed (.msi, .exe, and so on), .zip, .gzip | Every supported version |
+| .br | .NET Core 3.0 and later.  Not .NET Framework, and not .NET Core 2.x. |
+| .zlib | .NET 6 and later |
+
+Keep in mind that it is the version of your application that is already installed that has to decompress the update.  If any
+of the installed versions are built for .NET Framework, for example, then deploy the update as a .zip or .gzip (or not compressed).
+An application that is given a package that it is unable to decompress does not install it, and reports an error message instead.
+
 ## Adding the update check to your application.
 At whatever the point in your application you want to check for an update (usually at startup), use the UpdateChecker class.  Simply
 instantiate the class, then call the CheckRemote method, passing the Assembly that has the FileVersion set for version tracking to determine
@@ -169,8 +199,9 @@ So, an example parameter file is:
 ```
 
 
-ManifestBuilder is capable of compressing the .msi package automatically. Compression files that are supported include .zip, .gzip, .zlib, and .br,
-all of which are natively supported by .NET 9.0.  To have your installer package compressed appropriately, simply set the -remoteurl parameter
+ManifestBuilder is capable of compressing the .msi package automatically. Compression files that are supported include .zip, .gzip, .zlib, and .br.
+ManifestBuilder is able to create all of these, but an application that is built for an older version of .NET is not able to decompress
+all of them (see "Supported versions of .NET" above).  To have your installer package compressed appropriately, simply set the -remoteurl parameter
 to end with one of those file extentions (.zip, .gzip, .zlib, .br).  The compressed file will be created in the same folder as the .msi package
 on the PC.
 
@@ -205,4 +236,8 @@ being added after the setup package is built, along with creating a compressed f
 ## Where to find ManifestBuilder and VersionBump
 When you install the NuGet package RussJudge.AutoApplicationUpdater, ManifestBuilder and VersionBump
 can be found by expanding the linked "content" folder.  The properties will reflect the full path, 
-which will generally be located at "%USERPROFILE%\.nuget\packages\russjudge.autoapplicationupdater\<package_version>\contentFiles\any\net9.0\content"
+which will generally be located at "%USERPROFILE%\.nuget\packages\russjudge.autoapplicationupdater\<package_version>\contentFiles\any\any\content"
+
+ManifestBuilder and VersionBump are the same no matter which version of .NET your own project is built for.  To run them, the machine
+that does the build needs .NET 6 or later installed (any later version will do, such as the one that comes with the .NET SDK that you
+build with).

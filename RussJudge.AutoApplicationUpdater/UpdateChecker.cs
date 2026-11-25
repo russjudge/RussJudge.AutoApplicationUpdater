@@ -50,8 +50,11 @@ namespace RussJudge.AutoApplicationUpdater
                         localInstallerPackagePath = decompressedFile;
                     }
                 }
-                else if (UpdateManifest.CompressionTypes.ContainsKey(package.Extension))
+                else if (UpdateManifest.CompressionTypes.ContainsKey(package.Extension)
+                    || UpdateManifest.IsUnavailableCompressionType(package.Extension))
                 {
+                    //A compression type that this version of .NET is unable to decompress is sent through here as well,
+                    //so that it is reported as an error.  Otherwise the compressed file itself would be run as the installer.
                     var decompressedFile = UpdateManifest.Decompress(localInstallerPackagePath);
                     if (string.IsNullOrEmpty(decompressedFile))
                     {
@@ -119,7 +122,16 @@ namespace RussJudge.AutoApplicationUpdater
                             try
                             {
                                 string packageFile = Path.Combine(Path.GetTempPath(), GetPackageFileName(RemoteManifestFile, packageURL));
+#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER
                                 await File.WriteAllBytesAsync(packageFile, setupPackage).ConfigureAwait(false);
+#else
+                                //File.WriteAllBytesAsync does not exist in this version of .NET.  The file has to be
+                                //closed before the installer can be run, which is why the stream is in its own block.
+                                using (FileStream packageStream = new(packageFile, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, true))
+                                {
+                                    await packageStream.WriteAsync(setupPackage, 0, setupPackage.Length).ConfigureAwait(false);
+                                }
+#endif
                                 retVal = Update(packageFile);
                             }
                             catch (Exception ex)
